@@ -366,6 +366,27 @@ textarea{resize:vertical;min-height:60px}
 
 </div><!-- /content -->
 </div><!-- /main -->
+
+
+<!-- MODAL FLUXOGRAMA -->
+<div class="modal-overlay" id="modal-fluxograma" onclick="if(event.target===this)cm('modal-fluxograma')" style="padding-top:20px;align-items:flex-start">
+  <div style="background:var(--bg-primary);border-radius:var(--radius-lg);padding:22px;width:90%;max-width:860px;max-height:90vh;overflow-y:auto;border:1px solid var(--border-light);box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+      <i class="ti ti-hierarchy" style="font-size:20px;color:var(--accent)"></i>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:700" id="fluxo-titulo">Fluxograma AS IS</div>
+        <div style="font-size:12px;color:var(--text-secondary)" id="fluxo-sub">Gerado automaticamente a partir das etapas</div>
+      </div>
+      <button class="btn sm" onclick="exportarFluxograma()" title="Exportar como PNG"><i class="ti ti-download"></i> Exportar</button>
+      <button class="close-btn" onclick="cm('modal-fluxograma')" style="font-size:22px">×</button>
+    </div>
+    <div id="fluxograma-container" style="overflow-x:auto;padding:8px 0">
+      <canvas id="fluxograma-canvas" style="display:block;margin:0 auto"></canvas>
+    </div>
+  </div>
+</div>
+
+
 </div><!-- /app -->
 
 <!-- MODALS -->
@@ -1036,25 +1057,6 @@ ldDB();renderHome();rSels();
 
 
 </script>
-
-<!-- MODAL FLUXOGRAMA -->
-<div class="modal-overlay" id="modal-fluxograma" onclick="if(event.target===this)cm('modal-fluxograma')" style="padding-top:20px;align-items:flex-start">
-  <div style="background:var(--bg-primary);border-radius:var(--radius-lg);padding:22px;width:90%;max-width:860px;max-height:90vh;overflow-y:auto;border:1px solid var(--border-light);box-shadow:0 20px 60px rgba(0,0,0,.2)">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
-      <i class="ti ti-hierarchy" style="font-size:20px;color:var(--accent)"></i>
-      <div style="flex:1">
-        <div style="font-size:16px;font-weight:700" id="fluxo-titulo">Fluxograma AS IS</div>
-        <div style="font-size:12px;color:var(--text-secondary)" id="fluxo-sub">Gerado automaticamente a partir das etapas</div>
-      </div>
-      <button class="btn sm" onclick="exportarFluxograma()" title="Exportar como PNG"><i class="ti ti-download"></i> Exportar</button>
-      <button class="close-btn" onclick="cm('modal-fluxograma')" style="font-size:22px">×</button>
-    </div>
-    <div id="fluxograma-container" style="overflow-x:auto;padding:8px 0">
-      <canvas id="fluxograma-canvas" style="display:block;margin:0 auto"></canvas>
-    </div>
-  </div>
-</div>
-
 
 </body></html>';dl(new Blob([h],{type:'text/html;charset=utf-8'}),'m1_processos.html');}
 function expM2HTML(){var h='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Sistemas — Callink</title><style>body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;font-size:13px;color:#1a1a2e}h1{font-size:20px;border-bottom:3px solid #0a3d6b;padding-bottom:8px;color:#0a3d6b}table{width:100%;border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ddd;padding:7px 10px}th{background:#e8f0fb;color:#0a3d6b}@media print{body{margin:20px}}</style></head><body><h1>Inventário de Sistemas — Callink</h1><p style="color:#888;font-size:12px;margin-bottom:16px">'+new Date().toLocaleDateString('pt-BR')+' · '+DB.m2.sistemas.length+' sistema(s)</p><table><thead><tr><th>Sistema</th><th>Categoria</th><th>Criticidade</th><th>Operações</th><th>Finalidade</th></tr></thead><tbody>'+DB.m2.sistemas.map(function(s){return '<tr><td><strong>'+s.nome+'</strong></td><td>'+(catL[s.categoria]||'Outro')+'</td><td>'+s.criticidade+'</td><td>'+(s.operacoes||'—')+'</td><td>'+(s.finalidade||'—')+'</td></tr>';}).join('')+'</tbody></table></body></html>';dl(new Blob([h],{type:'text/html;charset=utf-8'}),'m2_sistemas.html');}
