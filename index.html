@@ -511,16 +511,33 @@ function delM1Proc(id){if(!confirm('Excluir?'))return;DB.m1.processos=DB.m1.proc
 /* ===== WIZARD ===== */
 var WN=['Identificação','Fluxo AS IS','Sistemas','Volumes/SLA','Dores','Oportunidades','Revisão'];
 function initWiz(){WIZ={step:0,etapas:[],sistemas:[],dores:[],oportunidades:[],_editId:null};rWizBar();rWizStep();}
-function mkEtapa(){return {id:Date.now()+Math.random(),tipo:'sequencial',texto:'',responsavel:'',sistema:'',sla_min:'',sim_goto:'',nao_goto:'',sim_label:'Sim',nao_label:'Não'};}
+function mkEtapa(){return {id:Date.now()+Math.random(),tipo:'sequencial',texto:'',responsavel:'',cargo:'',perfil:'',sistema:'',tmt:'',sim_goto:'',nao_goto:'',sim_label:'Sim',nao_label:'Não'};}
 function rWizBar(){document.getElementById('wiz-bar').innerHTML=WN.map(function(n,i){var bg=i<WIZ.step?'background:#dcfce7;color:#166534':i===WIZ.step?'background:var(--accent);color:#fff':'background:var(--bg-secondary);color:var(--text-tertiary)';return '<div class="wiz-step" style="'+bg+'">'+n+'</div>';}).join('');}
 function rWizStep(){var s=WIZ.step,c=document.getElementById('wiz-content');rWizBar();
 if(s===0){
   var tipoOpts=['atendimento:Atendimento (voz/chat/email)','backoffice:Backoffice','qualidade:Qualidade/Monitoria','treinamento:Treinamento/Onboarding','gestao:Gestão/Supervisão','staff_ti:Staff — TI','staff_pcp:Staff — PCP','staff_qat:Staff — QA&T','staff_proc:Staff — Processos'];
-  var projOpts=DB.m1.projetos.map(function(p){return '<option value="'+p.id+'"'+(String(p.id)===String(WIZ.projetoId)?' selected':'')+'>'+p.nome+'</option>';}).join('');
   var tipoOptHtml=tipoOpts.map(function(t){var v=t.split(':')[0],l=t.split(':').slice(1).join(':');return '<option value="'+v+'"'+(WIZ.tipo===v?' selected':'')+'>'+l+'</option>';}).join('');
-  c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-id-badge"></i>Identificação do processo</div><div class="form-grid"><div class="form-row"><label class="form-label">Projeto *</label><select id="wiz-proj"><option value="">Selecione...</option>'+projOpts+'</select></div><div class="form-row"><label class="form-label">Nome do processo *</label><input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div><div class="form-row"><label class="form-label">Tipo de célula</label><select id="wiz-tipo">'+tipoOptHtml+'</select></div><div class="form-row"><label class="form-label">Responsável entrevistado</label><input type="text" id="wiz-resp" placeholder="Nome e cargo" value="'+(WIZ.responsavel||'')+'"></div><div class="form-row"><label class="form-label">Data da entrevista</label><input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div><div class="form-row"><label class="form-label">AN responsável</label><input type="text" id="wiz-an" value="'+(WIZ.an||'')+'"></div></div><div class="form-row"><label class="form-label">Descrição geral do processo</label><textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div><div class="nav-btns"><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+  var projNome=DB.m1.projetos.find(function(p){return p.id===WIZ.projetoId;});
+  var projLabel=projNome?projNome.nome:'(projeto não encontrado)';
+  c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-id-badge"></i>Identificação do processo</div>'+
+    '<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">'+
+      '<i class="ti ti-folder" style="color:var(--color-text-secondary);font-size:15px"></i>'+
+      '<div><div style="font-size:12px;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Projeto</div>'+
+      '<div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">'+projLabel+'</div></div>'+
+    '</div>'+
+    '<div class="form-grid">'+
+      '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do processo *</label><input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div>'+
+      '<div class="form-row"><label class="form-label">Tipo de célula</label><select id="wiz-tipo">'+tipoOptHtml+'</select></div>'+
+      '<div class="form-row"><label class="form-label">Cliente</label><input type="text" id="wiz-cliente" placeholder="Ex: Keeta, Vivo, FIS..." value="'+(WIZ.cliente||'')+'"></div>'+
+      '<div class="form-row"><label class="form-label">Nome do entrevistado *</label><input type="text" id="wiz-resp" placeholder="Nome" value="'+(WIZ.responsavel||'')+'"></div>'+
+      '<div class="form-row"><label class="form-label">Cargo do entrevistado</label><input type="text" id="wiz-cargo" placeholder="Ex: Supervisor, Analista..." value="'+(WIZ.cargo||'')+'"></div>'+
+      '<div class="form-row"><label class="form-label">Data da entrevista</label><input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div>'+
+      '<div class="form-row"><label class="form-label">AN responsável</label><input type="text" id="wiz-an" value="'+(WIZ.an||'')+'"></div>'+
+    '</div>'+
+    '<div class="form-row"><label class="form-label">Descrição geral do processo</label><textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
+    '<div class="nav-btns"><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
 }
-else if(s===1){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-git-branch"></i>Fluxo AS IS — Como é feito hoje</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Documente cada etapa do processo na ordem que ocorre.</p><div id="wiz-st-list"></div><div style="display:flex;gap:8px;align-items:center;margin:8px 0"><button class="btn sm" onclick="wizAddStep()"><i class="ti ti-plus"></i> Adicionar etapa</button><button class="btn sm primary" onclick="abrirFluxograma()" id="btn-fluxograma"><i class="ti ti-hierarchy"></i> Ver fluxograma</button></div><div class="divider"></div><div class="form-row"><label class="form-label">Perfis envolvidos</label><input type="text" id="wiz-perfis" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor, Analista de QA"></div><div class="form-row"><label class="form-label">Existe documentação/procedimento formal hoje?</label><select id="wiz-doc"><option value="sim"'+(WIZ.doc==='sim'?' selected':'')+'>Sim, atualizado</option><option value="desatualizado"'+(WIZ.doc==='desatualizado'?' selected':'')+'>Sim, desatualizado</option><option value="nao"'+(WIZ.doc==='nao'?' selected':'')+'>Não existe</option></select></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizSteps();}
+else if(s===1){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-git-branch"></i>Fluxo AS IS — Como é feito hoje</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Documente cada etapa do processo na ordem que ocorre.</p><div id="wiz-st-list"></div><div id="wiz-new-form"></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm primary" onclick="abrirFluxograma()" id="btn-fluxograma" style="margin-left:auto"><i class="ti ti-hierarchy"></i> Ver fluxograma</button></div><div class="divider"></div><div class="form-row"><label class="form-label">Perfis envolvidos</label><input type="text" id="wiz-perfis" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor, Analista de QA"></div><div class="form-row"><label class="form-label">Existe documentação/procedimento formal hoje?</label><select id="wiz-doc"><option value="sim"'+(WIZ.doc==='sim'?' selected':'')+'>Sim, atualizado</option><option value="desatualizado"'+(WIZ.doc==='desatualizado'?' selected':'')+'>Sim, desatualizado</option><option value="nao"'+(WIZ.doc==='nao'?' selected':'')+'>Não existe</option></select></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizSteps();}
 else if(s===2){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-server"></i>Sistemas e ferramentas</div><div id="wiz-sys-list"></div><button class="btn sm" onclick="wizAddSys()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar sistema</button><div class="divider"></div><div class="form-row"><label class="form-label">Integração entre os sistemas?</label><select id="wiz-integ"><option value="sim_auto"'+(WIZ.integTipo==='sim_auto'?' selected':'')+'>Sim, automática (API)</option><option value="sim_manual"'+(WIZ.integTipo==='sim_manual'?' selected':'')+'>Sim, manual (copia/cola)</option><option value="nao"'+(WIZ.integTipo==='nao'?' selected':'')+'>Não há integração</option></select></div><div class="form-row"><label class="form-label">Descreva como os sistemas se comunicam</label><textarea id="wiz-integ-desc" placeholder="Ex: Agente copia o número do pedido do app e cola no CRM manualmente...">'+(WIZ.integDesc||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizSys();}
 else if(s===3){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i>Volumes e SLAs</div><div class="form-grid"><div class="form-row"><label class="form-label">Volume médio diário</label><input type="number" id="wiz-vol" value="'+(WIZ.volume||'')+'" placeholder="Ex: 500"></div><div class="form-row"><label class="form-label">TMA (Tempo Médio Atendimento)</label><input type="text" id="wiz-tma" value="'+(WIZ.tma||'')+'" placeholder="Ex: 8 min"></div><div class="form-row"><label class="form-label">SLA contratual</label><input type="text" id="wiz-sla" value="'+(WIZ.sla||'')+'" placeholder="Ex: 95% em até 30s"></div><div class="form-row"><label class="form-label">Performance atual vs SLA</label><select id="wiz-perf"><option value="acima"'+(WIZ.performance==='acima'?' selected':'')+'>Acima do SLA</option><option value="dentro"'+(WIZ.performance==='dentro'?' selected':'')+'>Dentro do SLA</option><option value="abaixo"'+(WIZ.performance==='abaixo'?' selected':'')+'>Abaixo do SLA</option><option value="nao_medido"'+(WIZ.performance==='nao_medido'?' selected':'')+'>Não medido</option></select></div><div class="form-row"><label class="form-label">Equipe (qtd de pessoas)</label><input type="number" id="wiz-equipe" value="'+(WIZ.equipe||'')+'" placeholder="Ex: 20"></div></div><div class="form-row"><label class="form-label">Sazonalidade / variações</label><textarea id="wiz-sazon" placeholder="Ex: Volume dobra nos fins de semana, picos às 12h e 19h...">'+(WIZ.sazonalidade||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';}
 else if(s===4){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Capture as dores relatadas. Cada dor pode virar uma oportunidade.</p><div id="wiz-dor-list"></div><button class="btn sm" onclick="wizAddDor()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button><div class="divider"></div><div class="form-row"><label class="form-label">Principal dor na visão do gestor</label><textarea id="wiz-dor-p" placeholder="O gestor apontou como maior gargalo...">'+(WIZ.dorPrincipal||'')+'</textarea></div><div class="form-row"><label class="form-label">Retrabalho frequente?</label><textarea id="wiz-retrab" placeholder="Ex: Agente precisa consultar 3 sistemas para resolver um chamado...">'+(WIZ.retrabalho||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizDores();}
@@ -528,7 +545,7 @@ else if(s===5){c.innerHTML='<div class="card"><div class="card-title"><i class="
 else if(s===6){var sc=calcScore(WIZ),isEdit=!!WIZ._editId;c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-check"></i>'+(isEdit?'Revisão — atualizando processo':'Revisão — pronto para salvar')+'</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"><div class="metric"><div class="metric-val" style="color:'+semColor(sc>=75?'v':sc>=50?'a':'r')+'">'+sc+'%</div><div class="metric-lbl">Maturidade</div></div><div class="metric"><div class="metric-val">'+(WIZ.etapas||[]).length+'</div><div class="metric-lbl">Etapas AS IS</div></div><div class="metric"><div class="metric-val">'+WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).length+'</div><div class="metric-lbl">Sistemas</div></div><div class="metric"><div class="metric-val">'+WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).length+'</div><div class="metric-lbl">Oportunidades</div></div></div><table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:16px"><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0;width:130px">Processo</td><td style="font-weight:600">'+(WIZ.nome||'—')+'</td></tr><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0">Responsável</td><td>'+(WIZ.responsavel||'—')+'</td></tr><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0">AN</td><td>'+(WIZ.an||'—')+'</td></tr><tr><td style="color:var(--text-secondary);padding:6px 0">Volume diário</td><td>'+(WIZ.volume||'—')+'</td></tr></table><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn success" onclick="wizSave()"><i class="ti ti-device-floppy"></i> '+(isEdit?'Atualizar processo':'Salvar processo')+'</button></div></div>';}}
 
 function wizSave2Step(){
-  if(WIZ.step===0){WIZ.projetoId=parseInt((document.getElementById('wiz-proj')||{}).value)||null;WIZ.nome=((document.getElementById('wiz-nome')||{}).value||'').trim()||WIZ.nome||'';WIZ.tipo=((document.getElementById('wiz-tipo')||{}).value)||WIZ.tipo||'atendimento';WIZ.responsavel=((document.getElementById('wiz-resp')||{}).value||'').trim();WIZ.data=((document.getElementById('wiz-data')||{}).value||'').trim();WIZ.an=((document.getElementById('wiz-an')||{}).value||'').trim();WIZ.descricao=((document.getElementById('wiz-desc')||{}).value||'').trim();}
+  if(WIZ.step===0){WIZ.nome=((document.getElementById('wiz-nome')||{}).value||'').trim()||WIZ.nome||'';WIZ.tipo=((document.getElementById('wiz-tipo')||{}).value)||WIZ.tipo||'atendimento';WIZ.responsavel=((document.getElementById('wiz-resp')||{}).value||'').trim();WIZ.cargo=((document.getElementById('wiz-cargo')||{}).value||'').trim();WIZ.cliente=((document.getElementById('wiz-cliente')||{}).value||'').trim();WIZ.data=((document.getElementById('wiz-data')||{}).value||'').trim();WIZ.an=((document.getElementById('wiz-an')||{}).value||'').trim();WIZ.descricao=((document.getElementById('wiz-desc')||{}).value||'').trim();}
   if(WIZ.step===1){WIZ.perfis=((document.getElementById('wiz-perfis')||{}).value||'').trim();WIZ.doc=((document.getElementById('wiz-doc')||{}).value)||WIZ.doc||'nao';}
   if(WIZ.step===2){WIZ.integTipo=((document.getElementById('wiz-integ')||{}).value)||WIZ.integTipo||'nao';WIZ.integDesc=((document.getElementById('wiz-integ-desc')||{}).value||'').trim();}
   if(WIZ.step===3){WIZ.volume=((document.getElementById('wiz-vol')||{}).value||'');WIZ.tma=((document.getElementById('wiz-tma')||{}).value||'').trim();WIZ.sla=((document.getElementById('wiz-sla')||{}).value||'').trim();WIZ.performance=((document.getElementById('wiz-perf')||{}).value)||'';WIZ.equipe=((document.getElementById('wiz-equipe')||{}).value||'');WIZ.sazonalidade=((document.getElementById('wiz-sazon')||{}).value||'').trim();}
@@ -536,58 +553,134 @@ function wizSave2Step(){
 }
 function wizNext(){wizSave2Step();if(WIZ.step<6){WIZ.step++;rWizStep();}}
 function wizPrev(){wizSave2Step();if(WIZ.step>0){WIZ.step--;rWizStep();}}
-function wizAddStep(){WIZ.etapas.push(mkEtapa());rWizSteps();}
-function wizDelStep(i){WIZ.etapas.splice(i,1);rWizSteps();}
-function wizToggleTipo(i){
-  WIZ.etapas[i].tipo=WIZ.etapas[i].tipo==='decisao'?'sequencial':'decisao';
+function wizAddStep(){
+  WIZ.etapas.push(mkEtapa());
   rWizSteps();
+  // Scroll para o novo item
+  setTimeout(function(){var el=document.getElementById('wiz-st-list');if(el)el.lastElementChild&&el.lastElementChild.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+}
+function wizDelStep(i){WIZ.etapas.splice(i,1);rWizSteps();}
+function wizSalvarEtapa(){
+  try{
+    var txt=(document.getElementById('wiz-new-txt')||{}).value||'';
+    if(!txt.trim()){alert('Descreva a etapa antes de salvar.');return;}
+    var resp=(document.getElementById('wiz-new-resp')||{}).value||'';
+    var cargo=(document.getElementById('wiz-new-cargo')||{}).value||'';
+    var perfil=(document.getElementById('wiz-new-perfil')||{}).value||'';
+    var sis=(document.getElementById('wiz-new-sis')||{}).value||'';
+    var tmtRaw=(document.getElementById('wiz-new-tmt')||{}).value||'0';
+    var tmt=parseInt(tmtRaw)||0;
+    var tipo=(document.getElementById('wiz-new-tipo')||{}).value||'sequencial';
+    var simLbl='Sim',naoLbl='Não',simGoto=null,naoGoto=null;
+    if(tipo==='decisao'){
+      var slEl=document.getElementById('wiz-new-siml');
+      var nlEl=document.getElementById('wiz-new-naol');
+      var sgEl=document.getElementById('wiz-new-sim');
+      var ngEl=document.getElementById('wiz-new-nao');
+      if(slEl)simLbl=slEl.value||'Sim';
+      if(nlEl)naoLbl=nlEl.value||'Não';
+      if(sgEl&&sgEl.value)simGoto=parseInt(sgEl.value);
+      if(ngEl&&ngEl.value)naoGoto=parseInt(ngEl.value);
+    }
+    var et=mkEtapa();
+    et.texto=txt.trim();
+    et.responsavel=resp.trim();
+    et.cargo=cargo.trim();
+    et.perfil=perfil.trim();
+    et.sistema=sis.trim();
+    et.tmt=tmt;
+    et.tipo=tipo;
+    et.sim_goto=simGoto;
+    et.nao_goto=naoGoto;
+    et.sim_label=simLbl;
+    et.nao_label=naoLbl;
+    WIZ.etapas.push(et);
+    rWizSteps();
+  }catch(err){
+    alert('Erro ao salvar etapa: '+err.message);
+  }
+}
+function rWizNewForm(){
+  var el=document.getElementById('wiz-new-form');
+  if(!el)return;
+  var nOpts=WIZ.etapas.map(function(x,j){return '<option value="'+(j+1)+'">Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';}).join('');
+  el.innerHTML=
+    '<div style="border:1px solid var(--color-border-tertiary);border-radius:10px;padding:12px 14px;background:var(--color-background-secondary)">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Nova etapa</div>'+
+    '<div style="margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-txt" placeholder="Descreva o que acontece nesta etapa..." style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-resp" placeholder="Nome do responsável" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wiz-new-cargo" placeholder="Cargo (ex: Supervisor)" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wiz-new-perfil" placeholder="Perfil (ex: Backoffice)" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 100px 140px;gap:7px;margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-sis" placeholder="Sistema utilizado" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
+        '<input type="number" id="wiz-new-tmt" placeholder="0" min="0" style="width:40px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
+        '<span style="font-size:11px;color:var(--color-text-secondary);white-space:nowrap">min (TMT)</span>'+
+      '</div>'+
+      '<select id="wiz-new-tipo" onchange="rWizDecFields()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+        '<option value="sequencial">→ Sequencial</option>'+
+        '<option value="decisao">◇ Decisão</option>'+
+      '</select>'+
+    '</div>'+
+    '<div id="wiz-dec-fields" style="display:none;background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--color-border-tertiary)">'+
+      '<div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Configurar decisão</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
+        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
+          '<input type="text" id="wiz-new-siml" value="Sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
+          '<input type="text" id="wiz-new-naol" value="Não" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
+        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">SIM → vai para</label>'+
+          '<select id="wiz-new-sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="">Próxima etapa</option>'+nOpts+'</select></div>'+
+        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">NÃO → vai para</label>'+
+          '<select id="wiz-new-nao" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="">Próxima etapa</option>'+nOpts+'</select></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:flex-end">'+
+      '<button class="btn primary" onclick="wizSalvarEtapa()"><i class="ti ti-check"></i> Salvar etapa</button>'+
+    '</div>'+
+    '</div>';
+}
+function rWizDecFields(){
+  var tipo=(document.getElementById('wiz-new-tipo')||{}).value;
+  var df=document.getElementById('wiz-dec-fields');
+  if(df)df.style.display=tipo==='decisao'?'block':'none';
 }
 function rWizSteps(){
   var el=document.getElementById('wiz-st-list');
   if(!el)return;
-  if(!WIZ.etapas.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma etapa. Adicione a primeira.</p>';return;}
-  el.innerHTML=WIZ.etapas.map(function(e,i){
-    var num=i+1;
-    var isDec=e.tipo==='decisao';
-    var nOpts=WIZ.etapas.map(function(x,j){return '<option value="'+(j+1)+'"'+(e.sim_goto===(j+1)?'selected':'')+'>Etapa '+(j+1)+'</option>';}).join('');
-    var nOptsN=WIZ.etapas.map(function(x,j){return '<option value="'+(j+1)+'"'+(e.nao_goto===(j+1)?'selected':'')+'>Etapa '+(j+1)+'</option>';}).join('');
-    var decFields=isDec?
-      '<div style="margin-top:8px;padding:10px 12px;background:var(--color-background-secondary);border-radius:8px;border:1px solid var(--color-border-tertiary)">'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">'+
-          '<div><label style="font-size:10px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:3px;text-transform:uppercase">✓ Label SIM</label>'+
-          '<input type="text" value="'+e.sim_label.replace(/"/g,'&quot;')+'" oninput="WIZ.etapas['+i+'].sim_label=this.value" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-          '<div><label style="font-size:10px;font-weight:600;color:var(--color-text-secondary);display:block;margin-bottom:3px;text-transform:uppercase">✗ Label NÃO</label>'+
-          '<input type="text" value="'+e.nao_label.replace(/"/g,'&quot;')+'" oninput="WIZ.etapas['+i+'].nao_label=this.value" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-        '</div>'+
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-          '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px;text-transform:uppercase">SIM → vai para</label>'+
-          '<select onchange="WIZ.etapas['+i+'].sim_goto=parseInt(this.value)" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima</option>'+nOpts+'</select></div>'+
-          '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px;text-transform:uppercase">NÃO → vai para</label>'+
-          '<select onchange="WIZ.etapas['+i+'].nao_goto=parseInt(this.value)" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima</option>'+nOptsN+'</select></div>'+
-        '</div>'+
-      '</div>':
-      '';
-    return '<div style="border:1px solid var(--color-border-tertiary);border-radius:10px;padding:10px 12px;margin-bottom:8px;border-left:3px solid '+(isDec?'#BA7517':'#1D9E75')+'">'+
-      '<div style="display:flex;gap:8px;align-items:flex-start">'+
-        '<span style="background:'+(isDec?'#fef3c7':'#ede9fe')+';color:'+(isDec?'#92400e':'#5b21b6')+';border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:6px">'+num+'</span>'+
-        '<div style="flex:1">'+
-          '<div style="display:grid;grid-template-columns:1fr auto;gap:6px;margin-bottom:6px">'+
-            '<input type="text" placeholder="O que acontece nesta etapa?" value="'+e.texto.replace(/"/g,'&quot;')+'" oninput="WIZ.etapas['+i+'].texto=this.value" id="wiz-et-txt-'+i+'" style="padding:6px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
-            '<button class="btn sm" onclick="wizToggleTipo('+i+')" style="white-space:nowrap;font-size:11px;background:'+(isDec?'#fef3c7':'var(--color-background-secondary)')+';border-color:'+(isDec?'#BA7517':'var(--color-border-secondary)')+';color:'+(isDec?'#92400e':'var(--color-text-secondary)')+'"><i class="ti ti-'+(isDec?'diamond':'arrow-right')+'"></i> '+(isDec?'Decisão':'Sequencial')+'</button>'+
+  if(!WIZ.etapas.length){
+    el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:12px">Nenhuma etapa cadastrada ainda.</p>';
+  } else {
+    el.innerHTML=WIZ.etapas.map(function(e,i){
+      var isDec=e.tipo==='decisao';
+      var slaText=e.tmt>0?e.tmt+'min':'—';
+      var respText=[e.responsavel,e.cargo,e.perfil].filter(Boolean).join(' · ')||'—';
+      return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:9px 12px;margin-bottom:5px;border-left:3px solid '+(isDec?'#BA7517':'#1D9E75')+';display:flex;align-items:center;gap:8px">'+
+        '<span style="background:'+(isDec?'#fef3c7':'#ede9fe')+';color:'+(isDec?'#92400e':'#5b21b6')+';border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+(i+1)+'</span>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:12.5px;font-weight:500;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
+            (isDec?'<span style="color:#BA7517;font-size:11px;margin-right:4px">◇</span>':'')+e.texto+
           '</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr 80px;gap:6px">'+
-            '<input type="text" placeholder="Responsável (cargo/perfil)" value="'+e.responsavel.replace(/"/g,'&quot;')+'" oninput="WIZ.etapas['+i+'].responsavel=this.value" id="wiz-et-resp-'+i+'" style="padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-            '<input type="text" placeholder="Sistema utilizado" value="'+e.sistema.replace(/"/g,'&quot;')+'" oninput="WIZ.etapas['+i+'].sistema=this.value" id="wiz-et-sis-'+i+'" style="padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-            '<input type="number" placeholder="min" value="'+e.sla_min+'" oninput="WIZ.etapas['+i+'].sla_min=parseInt(this.value)||0" id="wiz-et-sla-'+i+'" title="SLA em minutos" style="padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px">'+
+            (e.responsavel||e.cargo||e.perfil?'<span style="margin-right:8px"><i class="ti ti-user" style="font-size:10px"></i> '+respText+'</span>':'')+
+            (e.sistema?'<span style="margin-right:8px"><i class="ti ti-server" style="font-size:10px"></i> '+e.sistema+'</span>':'')+
+            (e.tmt>0?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+e.tmt+'min</span>':'')+
           '</div>'+
         '</div>'+
-        '<button class="btn sm danger" onclick="wizDelStep('+i+')" style="flex-shrink:0;margin-top:4px"><i class="ti ti-x"></i></button>'+
-      '</div>'+
-      decFields+
-    '</div>';
-  }).join('');
+        '<button class="btn sm danger" onclick="wizDelStep('+i+')" title="Remover"><i class="ti ti-trash"></i></button>'+
+      '</div>';
+    }).join('');
+  }
+  // Renderizar o formulário de nova etapa
+  rWizNewForm();
 }
 function wizAddSys(){WIZ.sistemas.push({nome:'',funcao:''});rWizSys();}
 function rWizSys(){var el=document.getElementById('wiz-sys-list');if(!el)return;if(!WIZ.sistemas.length){el.innerHTML='<p style="font-size:12.5px;color:var(--text-secondary)">Nenhum sistema. Adicione o primeiro.</p>';return;}el.innerHTML=WIZ.sistemas.map(function(s,i){return '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px"><input type="text" placeholder="Nome do sistema" value="'+s.nome.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].nome=this.value" id="wiz-sys-nome-'+i+'"><input type="text" placeholder="Para que usa?" value="'+s.funcao.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].funcao=this.value" id="wiz-sys-func-'+i+'"><button class="btn sm danger" onclick="WIZ.sistemas.splice('+i+',1);rWizSys()"><i class="ti ti-x"></i></button></div>';}).join('');}
@@ -896,7 +989,7 @@ function renderFluxograma(etapas, nome) {
   for(var i=0;i<etapas.length;i++){
     var e=etapas[i], pos=positions[i];
     var isDec=e.tipo==='decisao';
-    var slaRatio=slaMax>0&&e.sla_min>0?e.sla_min/slaMax:0;
+    var slaRatio=slaMax>0&&(e.tmt||e.sla_min||0)>0?(e.tmt||e.sla_min||0)/slaMax:0;
     var isCrit=slaRatio>0.8, isWarn=slaRatio>0.5&&!isCrit;
     var fill=isDec?C.decFill:isCrit?C.critFill:isWarn?C.warnFill:C.boxFill;
     var stroke=isDec?C.decStroke:isCrit?C.critStroke:isWarn?C.warnStroke:C.boxStroke;
@@ -920,9 +1013,10 @@ function renderFluxograma(etapas, nome) {
 
     // Sub: responsável + sistema + SLA
     var sub='';
-    if(e.responsavel&&e.responsavel.trim()) sub+=e.responsavel.trim();
+    var respParts=[e.responsavel,e.cargo,e.perfil].filter(Boolean);
+    if(respParts.length) sub+=respParts.join(' / ');
     if(e.sistema&&e.sistema.trim()) sub+=(sub?' · ':'')+e.sistema.trim();
-    if(e.sla_min>0) sub+=(sub?' · ':'')+e.sla_min+'min'+(isCrit?' ⚠':'');
+    var tmtV=e.tmt||e.sla_min||0;if(tmtV>0) sub+=(sub?' · ':'')+tmtV+'min'+(isCrit?' ⚠':'');
     if(sub){
       ctx.fillStyle=isCrit?C.critStroke:isWarn?C.warnStroke:C.sub;
       ctx.font='400 10px Inter,Arial,sans-serif';ctx.textAlign='center';
