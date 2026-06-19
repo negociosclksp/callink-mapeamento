@@ -579,8 +579,8 @@ function wizSalvarEtapa(){
       var ngEl=document.getElementById('wiz-new-nao');
       if(slEl)simLbl=slEl.value||'Sim';
       if(nlEl)naoLbl=nlEl.value||'Não';
-      if(sgEl&&sgEl.value)simGoto=parseInt(sgEl.value);
-      if(ngEl&&ngEl.value)naoGoto=parseInt(ngEl.value);
+      if(sgEl&&sgEl.value)simGoto=sgEl.value==='FIM'?'FIM':parseInt(sgEl.value);
+      if(ngEl&&ngEl.value)naoGoto=ngEl.value==='FIM'?'FIM':parseInt(ngEl.value);
     }
     var et=mkEtapa();
     et.texto=txt.trim();
@@ -637,10 +637,10 @@ function rWizNewForm(){
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
         '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">SIM → vai para</label>'+
           '<select id="wiz-new-sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option>'+nOpts+'</select></div>'+
+          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
         '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">NÃO → vai para</label>'+
           '<select id="wiz-new-nao" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option>'+nOpts+'</select></div>'+
+          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
       '</div>'+
     '</div>'+
     '<div style="display:flex;justify-content:flex-end">'+
@@ -648,6 +648,91 @@ function rWizNewForm(){
     '</div>'+
     '</div>';
 }
+function wizEditStep(i){
+  var e=WIZ.etapas[i];
+  if(!e)return;
+  // Preenche o formulário de nova etapa com os dados da etapa existente
+  // e muda o botão de Salvar para Atualizar
+  var nf=document.getElementById('wiz-new-form');
+  if(!nf)return;
+  var nOpts=WIZ.etapas.map(function(x,j){
+    return '<option value="'+(j+1)+'"'+(e.sim_goto===(j+1)?' selected':'')+'>Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';
+  }).join('');
+  var nOptsN=WIZ.etapas.map(function(x,j){
+    return '<option value="'+(j+1)+'"'+(e.nao_goto===(j+1)?' selected':'')+'>Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';
+  }).join('');
+  nf.innerHTML=
+    '<div style="border:2px solid #0a3d6b;border-radius:10px;padding:12px 14px;background:var(--color-background-secondary)">'+
+    '<div style="font-size:11px;font-weight:600;color:#0a3d6b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px"><i class="ti ti-edit" style="font-size:13px"></i> Editando etapa '+(i+1)+'</div>'+
+    '<div style="margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-txt" value="'+e.texto.replace(/"/g,'&quot;')+'" placeholder="Descreva o que acontece nesta etapa..." style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-resp" placeholder="Nome do responsável" value="'+e.responsavel.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wiz-new-cargo" placeholder="Cargo (ex: Supervisor)" value="'+e.cargo.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wiz-new-perfil" placeholder="Perfil (ex: Backoffice)" value="'+e.perfil.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 100px 140px;gap:7px;margin-bottom:8px">'+
+      '<input type="text" id="wiz-new-sis" placeholder="Sistema utilizado" value="'+e.sistema.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
+        '<input type="number" id="wiz-new-tmt" placeholder="0" min="0" value="'+(e.tmt||'')+'" style="width:40px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
+        '<span style="font-size:11px;color:var(--color-text-secondary);white-space:nowrap">min (TMT)</span>'+
+      '</div>'+
+      '<select id="wiz-new-tipo" onchange="rWizDecFields()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+        '<option value="sequencial"'+(e.tipo==='sequencial'?' selected':'')+'>→ Sequencial</option>'+
+        '<option value="decisao"'+(e.tipo==='decisao'?' selected':'')+'>◇ Decisão</option>'+
+      '</select>'+
+    '</div>'+
+    '<div id="wiz-dec-fields" style="display:'+(e.tipo==='decisao'?'block':'none')+';background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--color-border-tertiary)">'+
+      '<div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Configurar decisão</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
+        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
+          '<input type="text" id="wiz-new-siml" value="'+e.sim_label+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
+          '<input type="text" id="wiz-new-naol" value="'+e.nao_label+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
+        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">SIM → vai para</label>'+
+          '<select id="wiz-new-sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
+        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">NÃO → vai para</label>'+
+          '<select id="wiz-new-nao" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOptsN+'</select></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<button class="btn sm" onclick="rWizSteps()" style="color:var(--color-text-secondary)"><i class="ti ti-x"></i> Cancelar</button>'+
+      '<button class="btn primary" onclick="wizAtualizarStep('+i+')"><i class="ti ti-check"></i> Atualizar etapa</button>'+
+    '</div>'+
+    '</div>';
+}
+
+function wizAtualizarStep(i){
+  try{
+    var txt=(document.getElementById('wiz-new-txt')||{}).value||'';
+    if(!txt.trim()){alert('Descreva a etapa antes de salvar.');return;}
+    var e=WIZ.etapas[i];
+    e.texto=txt.trim();
+    e.responsavel=((document.getElementById('wiz-new-resp')||{}).value||'').trim();
+    e.cargo=((document.getElementById('wiz-new-cargo')||{}).value||'').trim();
+    e.perfil=((document.getElementById('wiz-new-perfil')||{}).value||'').trim();
+    e.sistema=((document.getElementById('wiz-new-sis')||{}).value||'').trim();
+    e.tmt=parseInt((document.getElementById('wiz-new-tmt')||{}).value)||0;
+    e.tipo=(document.getElementById('wiz-new-tipo')||{}).value||'sequencial';
+    if(e.tipo==='decisao'){
+      var sv=(document.getElementById('wiz-new-sim')||{}).value||'';
+      var nv=(document.getElementById('wiz-new-nao')||{}).value||'';
+      e.sim_goto=sv==='FIM'?'FIM':sv?parseInt(sv):null;
+      e.nao_goto=nv==='FIM'?'FIM':nv?parseInt(nv):null;
+      e.sim_label=(document.getElementById('wiz-new-siml')||{}).value||'Sim';
+      e.nao_label=(document.getElementById('wiz-new-naol')||{}).value||'Não';
+    }else{
+      e.sim_goto=null;e.nao_goto=null;
+    }
+    rWizSteps();
+  }catch(err){alert('Erro: '+err.message);}
+}
+
 function rWizDecFields(){
   var tipo=(document.getElementById('wiz-new-tipo')||{}).value;
   var df=document.getElementById('wiz-dec-fields');
@@ -675,7 +760,8 @@ function rWizSteps(){
             (e.tmt>0?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+e.tmt+'min</span>':'')+
           '</div>'+
         '</div>'+
-        '<button class="btn sm danger" onclick="wizDelStep('+i+')" title="Remover"><i class="ti ti-trash"></i></button>'+
+        '<button class="btn sm" onclick="wizEditStep('+i+')" title="Editar" style="margin-right:4px"><i class="ti ti-edit"></i></button>'+
+      '<button class="btn sm danger" onclick="wizDelStep('+i+')" title="Remover"><i class="ti ti-trash"></i></button>'+
       '</div>';
     }).join('');
   }
@@ -1025,96 +1111,142 @@ function renderFluxograma(etapas, nome) {
   }
 
   // === Setas entre etapas ===
+  // Calcular posição do bloco FIM (após a última etapa)
+  var lastP=positions[etapas.length-1];
+  var fimCX=lastP.cx, fimY=lastP.y+boxH+16+26+4;
+
   for(var i=0;i<etapas.length;i++){
     var e=etapas[i], pos=positions[i];
     var isDec=e.tipo==='decisao';
 
     if(isDec){
-      // Seta SIM
-      var simDest = e.sim_goto ? e.sim_goto-1 : i+1;
-      if(simDest>=0&&simDest<etapas.length){
-        var simPos=positions[simDest];
-        var isLoop=simDest<=i;
-        if(!isLoop){
-          // Para direita do losango
-          arrow(pos.cx+decW/2+2, pos.cy, simPos.x, simPos.cy, C.simColor, false);
-          ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='center';
-          ctx.fillText(e.sim_label||'Sim', pos.cx+decW/2+28, pos.cy-6);
-        } else {
-          // Loop: seta para cima
-          var loopX=pos.cx+decW/2+18;
+      // ---- SETA SIM (sai pela DIREITA do losango) ----
+      var simRaw=e.sim_goto;
+      var simIsFim=simRaw==='FIM';
+      var simDest=simRaw&&!simIsFim?simRaw-1:i+1;
+      if(simIsFim){
+        // SIM → FIM
+        arrowPath([
+          {x:pos.cx+decW/2,y:pos.cy},
+          {x:pos.cx+decW/2+36,y:pos.cy},
+          {x:pos.cx+decW/2+36,y:fimY-12},
+          {x:fimCX,y:fimY-12}
+        ],C.simColor,true);
+        ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+        ctx.fillText(e.sim_label||'Sim',pos.cx+decW/2+3,pos.cy-6);
+      } else if(simDest>=0&&simDest<etapas.length){
+        var sp=positions[simDest];
+        var isSimLoop=simDest<i;
+        if(isSimLoop){
+          // Loop para cima: curva pela lateral direita
+          var lrx=pos.cx+decW/2+30;
           arrowPath([
             {x:pos.cx+decW/2,y:pos.cy},
-            {x:loopX,y:pos.cy},
-            {x:loopX,y:simPos.cy},
-            {x:simPos.x+boxW,y:simPos.cy}
-          ], C.simColor, true);
+            {x:lrx,y:pos.cy},
+            {x:lrx,y:sp.cy},
+            {x:sp.x+boxW,y:sp.cy}
+          ],C.simColor,true);
           ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-          ctx.fillText(e.sim_label||'Sim', loopX+2, pos.cy-4);
-        }
-      }
-      // Seta NÃO
-      var naoDest = e.nao_goto ? e.nao_goto-1 : i+1;
-      if(naoDest>=0&&naoDest<etapas.length){
-        var naoPos=positions[naoDest];
-        var isNaoLoop=naoDest<=i;
-        if(!isNaoLoop && naoDest===i+1){
-          // Para baixo do losango
-          arrow(pos.cx, pos.cy+decH/2+2, naoPos.cx, naoPos.y-2, C.naoColor, false);
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-          ctx.fillText(e.nao_label||'Não', pos.cx+4, pos.cy+decH/2+16);
-        } else if(isNaoLoop){
-          // Loop para etapa anterior
-          var lx=pos.cx-decW/2-20;
-          arrowPath([
-            {x:pos.cx-decW/2,y:pos.cy},
-            {x:lx,y:pos.cy},
-            {x:lx,y:naoPos.cy},
-            {x:naoPos.x,y:naoPos.cy}
-          ], C.naoColor, true);
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
-          ctx.fillText(e.nao_label||'Não', lx-2, pos.cy-4);
+          ctx.fillText(e.sim_label||'Sim',lrx+2,pos.cy-5);
         } else {
-          // Para frente mas não próxima
-          var nx=pos.cx-decW/2-20;
-          arrowPath([
-            {x:pos.cx-decW/2,y:pos.cy},
-            {x:nx,y:pos.cy},
-            {x:nx,y:naoPos.y+boxH+10},
-            {x:naoPos.cx,y:naoPos.y+boxH+10},
-            {x:naoPos.cx,y:naoPos.y+boxH}
-          ], C.naoColor, true);
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
-          ctx.fillText(e.nao_label||'Não', nx-2, pos.cy-4);
+          // Para frente: sai pela direita
+          var toX=sp.x; var toY=sp.cy;
+          if(Math.floor(simDest/cols)===Math.floor(i/cols)){
+            // Mesma linha
+            arrow(pos.cx+decW/2+2,pos.cy,toX-2,toY,C.simColor,false);
+          } else {
+            // Linha diferente
+            var mx=pos.cx+decW/2+24;
+            arrowPath([{x:pos.cx+decW/2,y:pos.cy},{x:mx,y:pos.cy},{x:mx,y:sp.cy},{x:sp.x+boxW,y:sp.cy}],C.simColor,false);
+          }
+          ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='center';
+          ctx.fillText(e.sim_label||'Sim',pos.cx+decW/2+16,pos.cy-7);
         }
       }
+
+      // ---- SETA NÃO (sai por BAIXO do losango) ----
+      var naoRaw=e.nao_goto;
+      var naoIsFim=naoRaw==='FIM';
+      var naoDest=naoRaw&&!naoIsFim?naoRaw-1:i+1;
+      if(naoIsFim){
+        // NÃO → FIM: sai por baixo e vai para FIM
+        arrowPath([
+          {x:pos.cx,y:pos.cy+decH/2},
+          {x:pos.cx,y:pos.cy+decH/2+20},
+          {x:fimCX,y:pos.cy+decH/2+20},
+          {x:fimCX,y:fimY-12}
+        ],C.naoColor,true);
+        ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+        ctx.fillText(e.nao_label||'Não',pos.cx+4,pos.cy+decH/2+16);
+      } else if(naoDest>=0&&naoDest<etapas.length){
+        var np=positions[naoDest];
+        var isNaoLoop=naoDest<i;
+        var sameDest=naoDest===simDest&&!simIsFim&&!naoIsFim;
+        if(isNaoLoop){
+          // Volta para etapa anterior: curva pela lateral esquerda
+          var llx=pos.cx-decW/2-26;
+          arrowPath([
+            {x:pos.cx-decW/2,y:pos.cy},
+            {x:llx,y:pos.cy},
+            {x:llx,y:np.cy},
+            {x:np.x,y:np.cy}
+          ],C.naoColor,true);
+          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
+          ctx.fillText(e.nao_label||'Não',llx-2,pos.cy-5);
+        } else if(sameDest){
+          // SIM e NÃO vão para o mesmo lugar: NÃO sai por baixo
+          // SIM já foi desenhado pela direita
+          // NÃO sai por baixo e converge no mesmo ponto sem cruzar
+          var bY=pos.cy+decH/2+2;
+          arrowPath([
+            {x:pos.cx,y:bY},
+            {x:pos.cx,y:np.y-2}
+          ],C.naoColor,false);
+          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+          ctx.fillText(e.nao_label||'Não',pos.cx+4,bY+14);
+        } else {
+          // Destino diferente: sai por baixo
+          if(naoDest===i+1){
+            arrow(pos.cx,pos.cy+decH/2+2,np.cx,np.y-2,C.naoColor,false);
+          } else {
+            var bY2=pos.cy+decH/2+2;
+            arrowPath([
+              {x:pos.cx,y:bY2},
+              {x:pos.cx,y:bY2+20},
+              {x:np.cx,y:bY2+20},
+              {x:np.cx,y:np.y}
+            ],C.naoColor,false);
+          }
+          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+          ctx.fillText(e.nao_label||'Não',pos.cx+4,pos.cy+decH/2+16);
+        }
+      }
+
     } else {
       // Etapa sequencial → próxima
       if(i<etapas.length-1){
         var next=i+1;
-        var cp=positions[i], np=positions[next];
+        var cp=positions[i], np2=positions[next];
         var sameRow=Math.floor(i/cols)===Math.floor(next/cols);
         var currRow=Math.floor(i/cols);
         var dirLtoR2=currRow%2===0;
         if(sameRow){
           var fromX=dirLtoR2?cp.x+boxW+2:cp.x-2;
-          var toX=dirLtoR2?np.x-2:np.x+boxW+2;
-          arrow(fromX,cp.cy,toX,np.cy,C.arrow,false);
+          var toX2=dirLtoR2?np2.x-2:np2.x+boxW+2;
+          arrow(fromX,cp.cy,toX2,np2.cy,C.arrow,false);
         } else {
-          // Muda linha
           var midY=cp.y+boxH+arrowGap*0.5;
           arrowPath([
             {x:cp.cx,y:cp.y+boxH},
             {x:cp.cx,y:midY},
-            {x:np.cx,y:midY},
-            {x:np.cx,y:np.y}
-          ], C.arrow, false);
+            {x:np2.cx,y:midY},
+            {x:np2.cx,y:np2.y}
+          ],C.arrow,false);
         }
       }
     }
   }
-
-  // === FIM ===
+// === FIM ===
   var lastPos=positions[etapas.length-1];
   var endCX=lastPos.cx, endY=lastPos.y+boxH+16;
   arrow(endCX,lastPos.y+boxH,endCX,endY,C.arrow,false);
