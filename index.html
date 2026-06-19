@@ -162,7 +162,6 @@ textarea{resize:vertical;min-height:60px}
   <div class="nav-group">
     <div class="nav-section">M1 · Mapeamento</div>
     <div class="nav-item" onclick="nav('m1-proj')" id="nav-m1-proj"><i class="ti ti-folder"></i> Projetos</div>
-    <div class="nav-item" onclick="nav('m1-wiz')" id="nav-m1-wiz"><i class="ti ti-clipboard-list"></i> Nova entrevista</div>
     <div class="nav-item" onclick="nav('m1-proc')" id="nav-m1-proc"><i class="ti ti-sitemap"></i> Processos</div>
   </div>
   <div class="nav-divider"></div>
@@ -206,7 +205,7 @@ textarea{resize:vertical;min-height:60px}
   <div class="page-header"><div class="page-title">Painel geral</div><div class="page-sub">Visão consolidada do sistema</div></div>
   <div class="grid4" id="home-metrics"></div>
   <div class="home-module-grid">
-    <div class="home-module-card" onclick="nav('m1-wiz')"><i class="ti ti-clipboard-list"></i><div class="hm-title">M1 · Mapeamento</div><div class="hm-sub">Wizard AS IS, fluxo, sistemas, dores</div></div>
+    <div class="home-module-card" onclick="nav('m1-proj')"><i class="ti ti-clipboard-list"></i><div class="hm-title">M1 · Mapeamento</div><div class="hm-sub">Projetos, entrevistas, processos</div></div>
     <div class="home-module-card" onclick="nav('m2-inv')"><i class="ti ti-server"></i><div class="hm-title">M2 · Sistemas</div><div class="hm-sub">Inventário, integrações</div></div>
     <div class="home-module-card" onclick="nav('m3-matriz')"><i class="ti ti-bulb"></i><div class="hm-title">M3 · Oportunidades</div><div class="hm-sub">Matriz, kanban, roadmap</div></div>
     <div class="home-module-card" onclick="nav('m4-ck')"><i class="ti ti-checklist"></i><div class="hm-title">M4 · Implantação</div><div class="hm-sub">Trilhas, prontidão go-live</div></div>
@@ -471,7 +470,19 @@ function renderHome(){
 /* ===== M1 ===== */
 function salvarM1Proj(){var n=document.getElementById('m1pn-nome').value.trim();if(!n){alert('Informe o nome.');return;}DB.m1.projetos.push({id:Date.now(),nome:n,cliente:document.getElementById('m1pn-cli').value.trim(),an:document.getElementById('m1pn-an').value.trim(),desc:document.getElementById('m1pn-desc').value.trim(),data:new Date().toLocaleDateString('pt-BR')});svDB();cm('modal-m1-proj');renderM1Proj();rSels();}
 function renderM1Proj(){var el=document.getElementById('m1-proj-list');if(!DB.m1.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto. Crie o primeiro.</p></div>';return;}el.innerHTML=DB.m1.projetos.map(function(p){var cnt=DB.m1.processos.filter(function(x){return x.projetoId===p.id}).length;return '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:14px;font-weight:700">'+p.nome+'</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">'+(p.cliente||'')+(p.an?' · AN: '+p.an:'')+(p.data?' · '+p.data:'')+'</div><div style="margin-top:6px"><span class="badge b-navy">'+cnt+' processo(s)</span></div></div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="goWizProj('+p.id+')"><i class="ti ti-plus"></i> Entrevista</button><button class="btn sm danger" onclick="delM1Proj('+p.id+')"><i class="ti ti-trash"></i></button></div></div>';}).join('');}
-function goWizProj(id){nav('m1-wiz');setTimeout(function(){var s=document.getElementById('wiz-proj');if(s)s.value=String(id);},100);}
+function goWizProj(id){
+  WIZ={step:0,etapas:[],sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:id};
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('view-m1-wiz').classList.add('active');
+  var ni=document.getElementById('nav-m1-proj');if(ni)ni.classList.add('active');
+  rSels();rWizBar();rWizStep();
+  var t=document.getElementById('wiz-page-title');
+  var s=document.getElementById('wiz-page-sub');
+  var proj=DB.m1.projetos.find(function(p){return p.id===id;});
+  if(t)t.textContent='Nova entrevista'+(proj?' — '+proj.nome:'');
+  if(s)s.textContent='Roteiro guiado — preencha durante ou após a entrevista';
+}
 function delM1Proj(id){if(!confirm('Excluir projeto e processos?'))return;DB.m1.projetos=DB.m1.projetos.filter(function(p){return p.id!==id});DB.m1.processos=DB.m1.processos.filter(function(p){return p.projetoId!==id});svDB();renderM1Proj();rSels();}
 function renderM1Proc(){var sel=document.getElementById('m1p-proj').value;var list=DB.m1.processos;if(sel)list=list.filter(function(p){return String(p.projetoId)===sel});var el=document.getElementById('m1-proc-list');if(!list.length){el.innerHTML='<div class="empty-state"><i class="ti ti-sitemap"></i><p>Nenhum processo mapeado.</p></div>';return;}var sc=function(s){return s>=75?'sem-v':s>=50?'sem-a':s>0?'sem-r':'sem-c';};el.innerHTML='<div class="card">'+list.map(function(p){var proj=DB.m1.projetos.find(function(x){return x.id===p.projetoId});return '<div class="proc-row"><div class="sem '+sc(p.score)+'"></div><span style="flex:1;font-size:13px;font-weight:500">'+p.nome+(proj?' <span style="font-size:11px;color:var(--text-secondary);font-weight:400">('+proj.nome+')</span>':'')+'</span><span style="font-size:12px;color:var(--text-secondary);margin-right:8px">'+p.score+'%</span><div style="min-width:90px"><div class="pb-bg"><div class="pb-fill" style="width:'+p.score+'%;background:'+semColor(p.score>=75?'v':p.score>=50?'a':'r')+'"></div></div></div><button class="btn sm" style="margin-left:8px" onclick="editProcesso('+p.id+')" title="Editar processo"><i class="ti ti-edit"></i></button><button class="btn sm danger" style="margin-left:4px" onclick="delM1Proc('+p.id+')"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}
 function delM1Proc(id){if(!confirm('Excluir?'))return;DB.m1.processos=DB.m1.processos.filter(function(p){return p.id!==id});svDB();renderM1Proc();}
