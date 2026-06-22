@@ -421,7 +421,7 @@ textarea{resize:vertical;min-height:60px}
 
 /* ===== DB ===== */
 var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]}};
-var WIZ={step:0,steps:[],sistemas:[],dores:[],oportunidades:[]};
+var WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:null,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
 var M3DET=null;
 function ldDB(){try{var s=localStorage.getItem('callink_v1');if(s)DB=JSON.parse(s);}catch(e){}}
 function svDB(){try{localStorage.setItem('callink_v1',JSON.stringify(DB));}catch(e){}}
@@ -478,7 +478,7 @@ function renderHome(){
 function salvarM1Proj(){var n=document.getElementById('m1pn-nome').value.trim();if(!n){alert('Informe o nome.');return;}DB.m1.projetos.push({id:Date.now(),nome:n,cliente:document.getElementById('m1pn-cli').value.trim(),an:document.getElementById('m1pn-an').value.trim(),desc:document.getElementById('m1pn-desc').value.trim(),data:new Date().toLocaleDateString('pt-BR')});svDB();cm('modal-m1-proj');renderM1Proj();rSels();}
 function renderM1Proj(){var el=document.getElementById('m1-proj-list');if(!DB.m1.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto. Crie o primeiro.</p></div>';return;}el.innerHTML=DB.m1.projetos.map(function(p){var cnt=DB.m1.processos.filter(function(x){return x.projetoId===p.id}).length;return '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:14px;font-weight:700">'+p.nome+'</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">'+(p.cliente||'')+(p.an?' · AN: '+p.an:'')+(p.data?' · '+p.data:'')+'</div><div style="margin-top:6px"><span class="badge b-navy">'+cnt+' processo(s)</span></div></div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="goWizProj('+p.id+')"><i class="ti ti-plus"></i> Entrevista</button><button class="btn sm danger" onclick="delM1Proj('+p.id+')"><i class="ti ti-trash"></i></button></div></div>';}).join('');}
 function goWizProj(id){
-  WIZ={step:0,etapas:[],sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:id};
+  WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:id,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
   document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
   document.getElementById('view-m1-wiz').classList.add('active');
