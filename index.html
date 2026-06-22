@@ -449,21 +449,7 @@ function classify(o){if((o.impacto==='alto'||o.impacto==='medio')&&o.esforco==='
 function semaforo(k,v){if(v===null||v===undefined)return 'c';var m=parseFloat(k.meta),t=parseFloat(k.tol);if(k.dir==='maior_melhor')return v>=m?'v':v>=t?'a':'r';return v<=m?'v':v<=t?'a':'r';}
 function semC(s){return s==='v'?'sem-v':s==='a'?'sem-a':s==='r'?'sem-r':'sem-c';}
 function semColor(s){return s==='v'?'#1D9E75':s==='a'?'#EF9F27':s==='r'?'#E24B4A':'#888780';}
-function calcScore(d){var p=0;if(d.descricao&&d.descricao.length>20)p+=20;var ets=d.etapas||d.steps||[];if(ets.filter(function(s){return (s.texto||s||'').trim()}).length>=2)p+=20;if(d.sistemas&&d.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).length>=1)p+=15;if(d.volume||d.sla)p+=15;if(d.dores&&d.dores.filter(function(x){return x.descricao&&x.descricao.trim()}).length>=1)p+=15;if(d.oportunidades&&d.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).length>=1)p+=15;return p;}
-function calcPront(p){var it=p.itens||[];if(!it.length)return 0;var cr=it.filter(function(i){return i.prio==='critico'});var crd=cr.filter(function(i){return i.status==='concluido'||i.status==='nao_aplicavel'});var td=it.filter(function(i){return i.status==='concluido'||i.status==='nao_aplicavel'}).length;return Math.round((Math.round((td/it.length)*100)*.4)+(( cr.length?Math.round((crd.length/cr.length)*100):100)*.6));}
-function pCol(p){return p>=80?'#1D9E75':p>=50?'#EF9F27':'#E24B4A';}
-function getUlt(kid){var l=DB.m5.lancamentos.filter(function(x){return x.kpiId===kid}).sort(function(a,b){return b.periodo.localeCompare(a.periodo)});return l.length?l[0].valor:null;}
 
-/* ===== NAV ===== */
-function nav(id){
-  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
-  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
-  document.getElementById('view-'+id).classList.add('active');
-  var ni=document.getElementById('nav-'+id);if(ni)ni.classList.add('active');
-  var r={home:renderHome,'m1-proj':renderM1Proj,'m1-proc':renderM1Proc,'m2-inv':renderM2Inv,'m2-integ':renderM2Integ,'m3-lista':renderM3Lista,'m3-matriz':renderM3Matriz,'m3-kanban':renderM3Kanban,'m4-proj':renderM4Proj,'m4-ck':renderM4CK,'m5-dash':renderM5Dash,'m5-tend':renderM5Tend,'m5-lancar':rSels,exportar:function(){},'m1-wiz':initWiz};
-  if(r[id])r[id]();
-  rSels();
-}
 
 function rSels(){
   var m1o='<option value="">Todos os projetos</option>'+DB.m1.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>'}).join('');
@@ -508,275 +494,531 @@ function delM1Proj(id){if(!confirm('Excluir projeto e processos?'))return;DB.m1.
 function renderM1Proc(){var sel=document.getElementById('m1p-proj').value;var list=DB.m1.processos;if(sel)list=list.filter(function(p){return String(p.projetoId)===sel});var el=document.getElementById('m1-proc-list');if(!list.length){el.innerHTML='<div class="empty-state"><i class="ti ti-sitemap"></i><p>Nenhum processo mapeado.</p></div>';return;}var sc=function(s){return s>=75?'sem-v':s>=50?'sem-a':s>0?'sem-r':'sem-c';};el.innerHTML='<div class="card">'+list.map(function(p){var proj=DB.m1.projetos.find(function(x){return x.id===p.projetoId});return '<div class="proc-row"><div class="sem '+sc(p.score)+'"></div><span style="flex:1;font-size:13px;font-weight:500">'+p.nome+(proj?' <span style="font-size:11px;color:var(--text-secondary);font-weight:400">('+proj.nome+')</span>':'')+'</span><span style="font-size:12px;color:var(--text-secondary);margin-right:8px">'+p.score+'%</span><div style="min-width:90px"><div class="pb-bg"><div class="pb-fill" style="width:'+p.score+'%;background:'+semColor(p.score>=75?'v':p.score>=50?'a':'r')+'"></div></div></div><button class="btn sm" style="margin-left:8px" onclick="editProcesso('+p.id+')" title="Editar processo"><i class="ti ti-edit"></i></button><button class="btn sm danger" style="margin-left:4px" onclick="delM1Proc('+p.id+')"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}
 function delM1Proc(id){if(!confirm('Excluir?'))return;DB.m1.processos=DB.m1.processos.filter(function(p){return p.id!==id});svDB();renderM1Proc();}
 
-/* ===== WIZARD ===== */
-var WN=['Identificação','Fluxo AS IS','Sistemas','Volumes/SLA','Dores','Oportunidades','Revisão'];
-function initWiz(){WIZ={step:0,etapas:[],sistemas:[],dores:[],oportunidades:[],_editId:null};rWizBar();rWizStep();}
-function mkEtapa(){return {id:Date.now()+Math.random(),tipo:'sequencial',texto:'',responsavel:'',cargo:'',perfil:'',sistema:'',tmt:'',sim_goto:'',nao_goto:'',sim_label:'Sim',nao_label:'Não'};}
-function rWizBar(){document.getElementById('wiz-bar').innerHTML=WN.map(function(n,i){var bg=i<WIZ.step?'background:#dcfce7;color:#166534':i===WIZ.step?'background:var(--accent);color:#fff':'background:var(--bg-secondary);color:var(--text-tertiary)';return '<div class="wiz-step" style="'+bg+'">'+n+'</div>';}).join('');}
-function rWizStep(){var s=WIZ.step,c=document.getElementById('wiz-content');rWizBar();
-if(s===0){
-  var tipoOpts=['atendimento:Atendimento (voz/chat/email)','backoffice:Backoffice','qualidade:Qualidade/Monitoria','treinamento:Treinamento/Onboarding','gestao:Gestão/Supervisão','staff_ti:Staff — TI','staff_pcp:Staff — PCP','staff_qat:Staff — QA&T','staff_proc:Staff — Processos'];
-  var tipoOptHtml=tipoOpts.map(function(t){var v=t.split(':')[0],l=t.split(':').slice(1).join(':');return '<option value="'+v+'"'+(WIZ.tipo===v?' selected':'')+'>'+l+'</option>';}).join('');
-  var projNome=DB.m1.projetos.find(function(p){return p.id===WIZ.projetoId;});
-  var projLabel=projNome?projNome.nome:'(projeto não encontrado)';
-  c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-id-badge"></i>Identificação do processo</div>'+
-    '<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">'+
-      '<i class="ti ti-folder" style="color:var(--color-text-secondary);font-size:15px"></i>'+
-      '<div><div style="font-size:12px;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Projeto</div>'+
-      '<div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">'+projLabel+'</div></div>'+
-    '</div>'+
-    '<div class="form-grid">'+
-      '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do processo *</label><input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div>'+
-      '<div class="form-row"><label class="form-label">Tipo de célula</label><select id="wiz-tipo">'+tipoOptHtml+'</select></div>'+
-      '<div class="form-row"><label class="form-label">Cliente</label><input type="text" id="wiz-cliente" placeholder="Ex: Keeta, Vivo, FIS..." value="'+(WIZ.cliente||'')+'"></div>'+
-      '<div class="form-row"><label class="form-label">Nome do entrevistado *</label><input type="text" id="wiz-resp" placeholder="Nome" value="'+(WIZ.responsavel||'')+'"></div>'+
-      '<div class="form-row"><label class="form-label">Cargo do entrevistado</label><input type="text" id="wiz-cargo" placeholder="Ex: Supervisor, Analista..." value="'+(WIZ.cargo||'')+'"></div>'+
-      '<div class="form-row"><label class="form-label">Data da entrevista</label><input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div>'+
-      '<div class="form-row"><label class="form-label">AN responsável</label><input type="text" id="wiz-an" value="'+(WIZ.an||'')+'"></div>'+
-    '</div>'+
-    '<div class="form-row"><label class="form-label">Descrição geral do processo</label><textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
-    '<div class="nav-btns"><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+function nav(id){
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  document.getElementById('view-'+id).classList.add('active');
+  var ni=document.getElementById('nav-'+id);if(ni)ni.classList.add('active');
+  var r={'home':renderHome,'m1-proj':renderM1Proj,'m1-proc':renderM1Proc,
+    'm2-inv':renderM2Inv,'m2-integ':renderM2Integ,'m3-lista':renderM3Lista,
+    'm3-matriz':renderM3Matriz,'m3-kanban':renderM3Kanban,'m4-proj':renderM4Proj,
+    'm4-ck':renderM4CK,'m5-dash':renderM5Dash,'m5-tend':renderM5Tend,
+    'm5-lancar':rSels,'exportar':function(){},'m1-wiz':initWiz};
+  if(r[id])r[id]();
+  rSels();
 }
-else if(s===1){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-git-branch"></i>Fluxo AS IS — Como é feito hoje</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Documente cada etapa do processo na ordem que ocorre.</p><div id="wiz-st-list"></div><div id="wiz-new-form"></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm primary" onclick="abrirFluxograma()" id="btn-fluxograma" style="margin-left:auto"><i class="ti ti-hierarchy"></i> Ver fluxograma</button></div><div class="divider"></div><div class="form-row"><label class="form-label">Perfis envolvidos</label><input type="text" id="wiz-perfis" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor, Analista de QA"></div><div class="form-row"><label class="form-label">Existe documentação/procedimento formal hoje?</label><select id="wiz-doc"><option value="sim"'+(WIZ.doc==='sim'?' selected':'')+'>Sim, atualizado</option><option value="desatualizado"'+(WIZ.doc==='desatualizado'?' selected':'')+'>Sim, desatualizado</option><option value="nao"'+(WIZ.doc==='nao'?' selected':'')+'>Não existe</option></select></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizSteps();}
-else if(s===2){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-server"></i>Sistemas e ferramentas</div><div id="wiz-sys-list"></div><button class="btn sm" onclick="wizAddSys()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar sistema</button><div class="divider"></div><div class="form-row"><label class="form-label">Integração entre os sistemas?</label><select id="wiz-integ"><option value="sim_auto"'+(WIZ.integTipo==='sim_auto'?' selected':'')+'>Sim, automática (API)</option><option value="sim_manual"'+(WIZ.integTipo==='sim_manual'?' selected':'')+'>Sim, manual (copia/cola)</option><option value="nao"'+(WIZ.integTipo==='nao'?' selected':'')+'>Não há integração</option></select></div><div class="form-row"><label class="form-label">Descreva como os sistemas se comunicam</label><textarea id="wiz-integ-desc" placeholder="Ex: Agente copia o número do pedido do app e cola no CRM manualmente...">'+(WIZ.integDesc||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizSys();}
-else if(s===3){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i>Volumes e SLAs</div><div class="form-grid"><div class="form-row"><label class="form-label">Volume médio diário</label><input type="number" id="wiz-vol" value="'+(WIZ.volume||'')+'" placeholder="Ex: 500"></div><div class="form-row"><label class="form-label">TMA (Tempo Médio Atendimento)</label><input type="text" id="wiz-tma" value="'+(WIZ.tma||'')+'" placeholder="Ex: 8 min"></div><div class="form-row"><label class="form-label">SLA contratual</label><input type="text" id="wiz-sla" value="'+(WIZ.sla||'')+'" placeholder="Ex: 95% em até 30s"></div><div class="form-row"><label class="form-label">Performance atual vs SLA</label><select id="wiz-perf"><option value="acima"'+(WIZ.performance==='acima'?' selected':'')+'>Acima do SLA</option><option value="dentro"'+(WIZ.performance==='dentro'?' selected':'')+'>Dentro do SLA</option><option value="abaixo"'+(WIZ.performance==='abaixo'?' selected':'')+'>Abaixo do SLA</option><option value="nao_medido"'+(WIZ.performance==='nao_medido'?' selected':'')+'>Não medido</option></select></div><div class="form-row"><label class="form-label">Equipe (qtd de pessoas)</label><input type="number" id="wiz-equipe" value="'+(WIZ.equipe||'')+'" placeholder="Ex: 20"></div></div><div class="form-row"><label class="form-label">Sazonalidade / variações</label><textarea id="wiz-sazon" placeholder="Ex: Volume dobra nos fins de semana, picos às 12h e 19h...">'+(WIZ.sazonalidade||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';}
-else if(s===4){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Capture as dores relatadas. Cada dor pode virar uma oportunidade.</p><div id="wiz-dor-list"></div><button class="btn sm" onclick="wizAddDor()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button><div class="divider"></div><div class="form-row"><label class="form-label">Principal dor na visão do gestor</label><textarea id="wiz-dor-p" placeholder="O gestor apontou como maior gargalo...">'+(WIZ.dorPrincipal||'')+'</textarea></div><div class="form-row"><label class="form-label">Retrabalho frequente?</label><textarea id="wiz-retrab" placeholder="Ex: Agente precisa consultar 3 sistemas para resolver um chamado...">'+(WIZ.retrabalho||'')+'</textarea></div><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';rWizDores();}
-else if(s===5){c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div><p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:12px">Classifique cada oportunidade — o score é calculado automaticamente pelo esforço x impacto.</p><div id="wiz-op-list"></div><button class="btn sm" onclick="wizAddOp()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar oportunidade</button><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn primary" onclick="wizNext()">Revisar <i class="ti ti-arrow-right"></i></button></div></div>';rWizOps();}
-else if(s===6){var sc=calcScore(WIZ),isEdit=!!WIZ._editId;c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-check"></i>'+(isEdit?'Revisão — atualizando processo':'Revisão — pronto para salvar')+'</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"><div class="metric"><div class="metric-val" style="color:'+semColor(sc>=75?'v':sc>=50?'a':'r')+'">'+sc+'%</div><div class="metric-lbl">Maturidade</div></div><div class="metric"><div class="metric-val">'+(WIZ.etapas||[]).length+'</div><div class="metric-lbl">Etapas AS IS</div></div><div class="metric"><div class="metric-val">'+WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).length+'</div><div class="metric-lbl">Sistemas</div></div><div class="metric"><div class="metric-val">'+WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).length+'</div><div class="metric-lbl">Oportunidades</div></div></div><table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:16px"><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0;width:130px">Processo</td><td style="font-weight:600">'+(WIZ.nome||'—')+'</td></tr><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0">Responsável</td><td>'+(WIZ.responsavel||'—')+'</td></tr><tr style="border-bottom:1px solid var(--border-light)"><td style="color:var(--text-secondary);padding:6px 0">AN</td><td>'+(WIZ.an||'—')+'</td></tr><tr><td style="color:var(--text-secondary);padding:6px 0">Volume diário</td><td>'+(WIZ.volume||'—')+'</td></tr></table><div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button><button class="btn success" onclick="wizSave()"><i class="ti ti-device-floppy"></i> '+(isEdit?'Atualizar processo':'Salvar processo')+'</button></div></div>';}}
+function expAll(){dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),'callink_smn_backup_'+new Date().toISOString().substring(0,10)+'.json');}
+function importAll(evt){var f=evt.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{DB=JSON.parse(e.target.result);svDB();renderHome();rSels();alert('Dados importados com sucesso!');}catch(e){alert('Arquivo inválido.');}};r.readAsText(f);}
 
+/* ===== WIZARD ===== */
+
+/* ===== WIZARD ===== */
+/* ===== WIZARD M1 — ÁRVORE ===== */
+var WN=['Identificação','Fluxo AS IS','Sistemas','Volumes/SLA','Dores','Oportunidades','Revisão'];
+
+function mkNo(tipo){
+  return {
+    id:'n'+(Date.now()+Math.random()).toString(36),
+    tipo:tipo||'sequencial',
+    texto:'',responsavel:'',cargo:'',perfil:'',sistema:'',tmt:0,
+    sim_label:'Sim',nao_label:'Não',
+    proximo:null,    // id do próximo nó (sequencial) ou null/'FIM'
+    sim_filho:null,  // id do ramo SIM (decisao)
+    nao_filho:null   // id do ramo NÃO (decisao)
+  };
+}
+
+function initWiz(){
+  WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,
+       projetoId:null,nome:'',tipo:'atendimento',responsavel:'',cargo:'',
+       cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',
+       integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',
+       equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
+  rWizBar();rWizStep();
+}
+
+function rWizBar(){
+  document.getElementById('wiz-bar').innerHTML=WN.map(function(n,i){
+    var bg=i<WIZ.step?'background:#dcfce7;color:#166534':
+           i===WIZ.step?'background:var(--accent);color:#fff':
+           'background:var(--color-background-secondary);color:var(--color-text-tertiary)';
+    return '<div class="wiz-step" style="'+bg+'">'+n+'</div>';
+  }).join('');
+}
+
+/* ---------- STEP 0: Identificação ---------- */
+function rWizStep(){
+  var s=WIZ.step,c=document.getElementById('wiz-content');
+  rWizBar();
+  if(s===0){
+    var tipoOpts=['atendimento:Atendimento (voz/chat/email)','backoffice:Backoffice',
+      'qualidade:Qualidade/Monitoria','treinamento:Treinamento/Onboarding',
+      'gestao:Gestão/Supervisão','staff_ti:Staff — TI','staff_pcp:Staff — PCP',
+      'staff_qat:Staff — QA&T','staff_proc:Staff — Processos'];
+    var tipoOptHtml=tipoOpts.map(function(t){
+      var v=t.split(':')[0],l=t.split(':').slice(1).join(':');
+      return '<option value="'+v+'"'+(WIZ.tipo===v?' selected':'')+'>'+l+'</option>';
+    }).join('');
+    var projNome=DB.m1.projetos.find(function(p){return p.id===WIZ.projetoId;});
+    var projLabel=projNome?projNome.nome:'(projeto não selecionado)';
+    c.innerHTML=
+      '<div class="card">'+
+      '<div class="card-title"><i class="ti ti-id-badge"></i>Identificação do processo</div>'+
+      '<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">'+
+        '<i class="ti ti-folder" style="color:var(--color-text-secondary);font-size:15px"></i>'+
+        '<div><div style="font-size:11px;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Projeto</div>'+
+        '<div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">'+projLabel+'</div></div>'+
+      '</div>'+
+      '<div class="form-grid">'+
+        '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do processo *</label>'+
+          '<input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div>'+
+        '<div class="form-row"><label class="form-label">Tipo de célula</label>'+
+          '<select id="wiz-tipo">'+tipoOptHtml+'</select></div>'+
+        '<div class="form-row"><label class="form-label">Cliente</label>'+
+          '<input type="text" id="wiz-cliente" placeholder="Ex: Keeta, FIS..." value="'+(WIZ.cliente||'')+'"></div>'+
+        '<div class="form-row"><label class="form-label">Nome do entrevistado</label>'+
+          '<input type="text" id="wiz-resp" placeholder="Nome" value="'+(WIZ.responsavel||'')+'"></div>'+
+        '<div class="form-row"><label class="form-label">Cargo do entrevistado</label>'+
+          '<input type="text" id="wiz-cargo" placeholder="Ex: Supervisor, Analista..." value="'+(WIZ.cargo||'')+'"></div>'+
+        '<div class="form-row"><label class="form-label">Data da entrevista</label>'+
+          '<input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div>'+
+        '<div class="form-row"><label class="form-label">AN responsável</label>'+
+          '<input type="text" id="wiz-an" value="'+(WIZ.an||'')+'"></div>'+
+      '</div>'+
+      '<div class="form-row"><label class="form-label">Descrição geral</label>'+
+        '<textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
+      '<div class="nav-btns"><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div>'+
+      '</div>';
+  }
+  else if(s===1){ rWizStepFluxo(); }
+  else if(s===2){
+    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-server"></i>Sistemas e ferramentas</div>'+
+      '<div id="wiz-sys-list"></div>'+
+      '<button class="btn sm" onclick="wizAddSys()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar sistema</button>'+
+      '<div class="divider"></div>'+
+      '<div class="form-row"><label class="form-label">Integração entre os sistemas?</label>'+
+        '<select id="wiz-integ"><option value="sim_auto"'+(WIZ.integTipo==='sim_auto'?' selected':'')+'>Sim, automática (API)</option>'+
+        '<option value="sim_manual"'+(WIZ.integTipo==='sim_manual'?' selected':'')+'>Sim, manual</option>'+
+        '<option value="nao"'+(WIZ.integTipo==='nao'?' selected':'')+'>Não há integração</option></select></div>'+
+      '<div class="form-row"><label class="form-label">Como os sistemas se comunicam?</label>'+
+        '<textarea id="wiz-integ-desc" placeholder="Ex: Agente copia do app e cola no CRM...">'+(WIZ.integDesc||'')+'</textarea></div>'+
+      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+    rWizSys();
+  }
+  else if(s===3){
+    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i>Volumes e SLAs</div>'+
+      '<div class="form-grid">'+
+        '<div class="form-row"><label class="form-label">Volume médio diário</label><input type="number" id="wiz-vol" value="'+(WIZ.volume||'')+'" placeholder="Ex: 500"></div>'+
+        '<div class="form-row"><label class="form-label">TMA</label><input type="text" id="wiz-tma" value="'+(WIZ.tma||'')+'" placeholder="Ex: 8 min"></div>'+
+        '<div class="form-row"><label class="form-label">SLA contratual</label><input type="text" id="wiz-sla" value="'+(WIZ.sla||'')+'" placeholder="Ex: 95% em 30s"></div>'+
+        '<div class="form-row"><label class="form-label">Performance vs SLA</label>'+
+          '<select id="wiz-perf"><option value="acima"'+(WIZ.performance==='acima'?' selected':'')+'>Acima</option>'+
+          '<option value="dentro"'+(WIZ.performance==='dentro'?' selected':'')+'>Dentro</option>'+
+          '<option value="abaixo"'+(WIZ.performance==='abaixo'?' selected':'')+'>Abaixo</option>'+
+          '<option value="nao_medido"'+(WIZ.performance==='nao_medido'?' selected':'')+'>Não medido</option></select></div>'+
+        '<div class="form-row"><label class="form-label">Equipe (qtd)</label><input type="number" id="wiz-equipe" value="'+(WIZ.equipe||'')+'"></div>'+
+      '</div>'+
+      '<div class="form-row"><label class="form-label">Sazonalidade</label>'+
+        '<textarea id="wiz-sazon" placeholder="Picos de volume, variações...">'+(WIZ.sazonalidade||'')+'</textarea></div>'+
+      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+  }
+  else if(s===4){
+    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div>'+
+      '<div id="wiz-dor-list"></div>'+
+      '<button class="btn sm" onclick="wizAddDor()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button>'+
+      '<div class="divider"></div>'+
+      '<div class="form-row"><label class="form-label">Principal dor na visão do gestor</label>'+
+        '<textarea id="wiz-dor-p" placeholder="O gestor apontou como maior gargalo...">'+(WIZ.dorPrincipal||'')+'</textarea></div>'+
+      '<div class="form-row"><label class="form-label">Retrabalho frequente?</label>'+
+        '<textarea id="wiz-retrab" placeholder="Ex: Consulta 3 sistemas para um chamado...">'+(WIZ.retrabalho||'')+'</textarea></div>'+
+      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+    rWizDores();
+  }
+  else if(s===5){
+    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div>'+
+      '<div id="wiz-op-list"></div>'+
+      '<button class="btn sm" onclick="wizAddOp()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar oportunidade</button>'+
+      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
+        '<button class="btn primary" onclick="wizNext()">Revisar <i class="ti ti-arrow-right"></i></button></div></div>';
+    rWizOps();
+  }
+  else if(s===6){
+    var nos=Object.values(WIZ.nos||{});
+    var sc=calcScore(WIZ);
+    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-check"></i>Revisão — '+(WIZ._editId?'atualizando processo':'pronto para salvar')+'</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'+
+        '<div class="metric"><div class="metric-val" style="color:'+(sc>=75?'var(--green)':sc>=50?'var(--amber)':'var(--red)')+'">'+sc+'%</div><div class="metric-lbl">Maturidade</div></div>'+
+        '<div class="metric"><div class="metric-val">'+nos.length+'</div><div class="metric-lbl">Etapas</div></div>'+
+        '<div class="metric"><div class="metric-val">'+WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim();}).length+'</div><div class="metric-lbl">Sistemas</div></div>'+
+        '<div class="metric"><div class="metric-val">'+WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim();}).length+'</div><div class="metric-lbl">Oportunidades</div></div>'+
+      '</div>'+
+      '<table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:16px">'+
+        '<tr style="border-bottom:1px solid var(--color-border-light)"><td style="color:var(--color-text-secondary);padding:6px 0;width:130px">Processo</td><td style="font-weight:600">'+(WIZ.nome||'—')+'</td></tr>'+
+        '<tr style="border-bottom:1px solid var(--color-border-light)"><td style="color:var(--color-text-secondary);padding:6px 0">Entrevistado</td><td>'+(WIZ.responsavel||'—')+(WIZ.cargo?' · '+WIZ.cargo:'')+'</td></tr>'+
+        '<tr><td style="color:var(--color-text-secondary);padding:6px 0">Volume diário</td><td>'+(WIZ.volume||'—')+'</td></tr>'+
+      '</table>'+
+      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+        '<button class="btn success" onclick="wizSave()"><i class="ti ti-device-floppy"></i> '+(WIZ._editId?'Atualizar':'Salvar')+' processo</button></div></div>';
+  }
+}
+
+/* ---------- STEP 1: Fluxo AS IS em Árvore ---------- */
+function rWizStepFluxo(){
+  var c=document.getElementById('wiz-content');
+  var nosCount=Object.keys(WIZ.nos||{}).length;
+  c.innerHTML=
+    '<div class="card">'+
+    '<div class="card-title"><i class="ti ti-git-branch"></i>Fluxo AS IS — Como é feito hoje</div>'+
+    '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:14px">'+
+      'Monte o fluxo como uma árvore. Cada etapa pode ter uma próxima (sequencial) ou dois caminhos (decisão: SIM / NÃO).'+
+    '</p>'+
+    '<div id="wiz-arvore" style="margin-bottom:12px"></div>'+
+    (nosCount===0?
+      '<button class="btn primary" onclick="wizAddRaiz()"><i class="ti ti-plus"></i> Adicionar primeira etapa</button>':
+      '')+
+    '<div id="wiz-no-form" style="margin-top:10px"></div>'+
+    '<div class="divider"></div>'+
+    '<div class="form-row"><label class="form-label">Perfis envolvidos</label>'+
+      '<input type="text" id="wiz-perfis" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor, Analista de QA"></div>'+
+    '<div class="nav-btns">'+
+      '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+      (nosCount>0?'<button class="btn" onclick="abrirFluxograma()"><i class="ti ti-hierarchy"></i> Ver fluxograma</button>':'')+
+      '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button>'+
+    '</div></div>';
+  rWizArvore();
+}
+
+/* Renderizar a árvore no formulário */
+function rWizArvore(){
+  var el=document.getElementById('wiz-arvore');
+  if(!el)return;
+  if(!WIZ.raiz||!WIZ.nos[WIZ.raiz]){el.innerHTML='';return;}
+  el.innerHTML=rWizNoHtml(WIZ.raiz,0);
+}
+
+function rWizNoHtml(noId,depth){
+  if(!noId||noId==='FIM')return '';
+  var no=WIZ.nos[noId];
+  if(!no)return '';
+  var isDec=no.tipo==='decisao';
+  var indent=depth*24;
+  var sub=[no.responsavel,no.cargo,no.perfil].filter(Boolean).join(' / ');
+  var subSis=no.sistema?'<span style="margin-left:8px"><i class="ti ti-server" style="font-size:10px"></i> '+no.sistema+'</span>':'';
+  var subTmt=no.tmt>0?'<span style="margin-left:8px"><i class="ti ti-clock" style="font-size:10px"></i> '+no.tmt+'min</span>':'';
+  var html=
+    '<div style="margin-left:'+indent+'px;margin-bottom:6px">'+
+    '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:9px 12px;'+
+      'border-left:3px solid '+(isDec?'#BA7517':'#1D9E75')+';background:var(--color-background-primary);'+
+      'display:flex;align-items:center;gap:8px">'+
+      '<span style="background:'+(isDec?'#fef3c7':'#ede9fe')+';color:'+(isDec?'#92400e':'#5b21b6')+
+        ';border-radius:50%;width:20px;height:20px;min-width:20px;display:flex;align-items:center;'+
+        'justify-content:center;font-size:10px;font-weight:700">'+(isDec?'◇':'→')+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:12.5px;font-weight:500;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+no.texto+'</div>'+
+        '<div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px">'+
+          (sub?'<span><i class="ti ti-user" style="font-size:10px"></i> '+sub+'</span>':'')+subSis+subTmt+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:4px;flex-shrink:0">'+
+        '<button class="btn sm" onclick="wizEditNo(\''+noId+'\')" title="Editar"><i class="ti ti-edit"></i></button>'+
+        '<button class="btn sm danger" onclick="wizDelNo(\''+noId+'\')" title="Remover"><i class="ti ti-trash"></i></button>'+
+      '</div>'+
+    '</div>';
+
+  if(isDec){
+    // Ramo SIM
+    html+='<div style="margin-left:16px;margin-top:4px">'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+        '<span style="font-size:10px;font-weight:700;color:#166534;background:#dcfce7;padding:2px 7px;border-radius:20px">'+no.sim_label+'</span>';
+    if(no.sim_filho&&no.sim_filho!=='FIM'){
+      html+='</div>'+rWizNoHtml(no.sim_filho,0);
+    } else if(no.sim_filho==='FIM'){
+      html+='<span style="font-size:11px;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:6px;margin-left:4px">→ FIM</span></div>';
+    } else {
+      html+='<button class="btn sm" onclick="wizAddFilho(\''+noId+'\',\'sim\')" style="font-size:11px;color:#166534"><i class="ti ti-plus"></i> Adicionar ramo SIM</button>'+
+        '<button class="btn sm" onclick="wizSetFim(\''+noId+'\',\'sim\')" style="font-size:10px;margin-left:4px">→ FIM</button></div>';
+    }
+    html+='</div>';
+    // Ramo NÃO
+    html+='<div style="margin-left:16px;margin-top:4px">'+
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+        '<span style="font-size:10px;font-weight:700;color:#991b1b;background:#fee2e2;padding:2px 7px;border-radius:20px">'+no.nao_label+'</span>';
+    if(no.nao_filho&&no.nao_filho!=='FIM'){
+      html+='</div>'+rWizNoHtml(no.nao_filho,0);
+    } else if(no.nao_filho==='FIM'){
+      html+='<span style="font-size:11px;color:#991b1b;background:#fee2e2;padding:2px 8px;border-radius:6px;margin-left:4px">→ FIM</span></div>';
+    } else {
+      html+='<button class="btn sm" onclick="wizAddFilho(\''+noId+'\',\'nao\')" style="font-size:11px;color:#991b1b"><i class="ti ti-plus"></i> Adicionar ramo NÃO</button>'+
+        '<button class="btn sm" onclick="wizSetFim(\''+noId+'\',\'nao\')" style="font-size:10px;margin-left:4px">→ FIM</button></div>';
+    }
+    html+='</div>';
+  } else {
+    // Próxima etapa sequencial
+    if(no.proximo&&no.proximo!=='FIM'){
+      html+=rWizNoHtml(no.proximo,0);
+    } else if(no.proximo==='FIM'){
+      html+='<div style="margin-left:16px;margin-top:4px"><span style="font-size:11px;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:6px">→ FIM</span></div>';
+    } else {
+      html+='<div style="margin-left:16px;margin-top:4px;display:flex;gap:4px">'+
+        '<button class="btn sm" onclick="wizAddFilho(\''+noId+'\',\'proximo\')" style="font-size:11px"><i class="ti ti-plus"></i> Próxima etapa</button>'+
+        '<button class="btn sm" onclick="wizSetFim(\''+noId+'\',\'proximo\')" style="font-size:10px">→ FIM</button></div>';
+    }
+  }
+  html+='</div>';
+  return html;
+}
+
+/* ---------- Ações da árvore ---------- */
+var _wizAddCtx=null; // {parentId, campo} para saber onde inserir
+
+function wizAddRaiz(){
+  _wizAddCtx={parentId:null,campo:'raiz'};
+  rWizFormNo(null);
+}
+
+function wizAddFilho(parentId,campo){
+  _wizAddCtx={parentId:parentId,campo:campo};
+  rWizFormNo(null);
+}
+
+function wizSetFim(parentId,campo){
+  if(campo==='raiz'){WIZ.raiz='FIM';}
+  else if(WIZ.nos[parentId]){WIZ.nos[parentId][campo==='proximo'?'proximo':campo==='sim'?'sim_filho':'nao_filho']='FIM';}
+  rWizArvore();
+  var c=document.getElementById('wiz-content');
+  var addBtn=c?c.querySelector('button[onclick="wizAddRaiz()"]'):null;
+  if(addBtn)addBtn.style.display='none';
+  // Atualizar botão ver fluxograma
+  rWizStepFluxo();
+}
+
+function wizDelNo(noId){
+  if(!confirm('Remover esta etapa e todos os seus filhos?'))return;
+  // Remover o nó e todos os seus filhos recursivamente
+  function delRec(id){
+    if(!id||id==='FIM')return;
+    var no=WIZ.nos[id];
+    if(!no)return;
+    if(no.proximo)delRec(no.proximo);
+    if(no.sim_filho)delRec(no.sim_filho);
+    if(no.nao_filho)delRec(no.nao_filho);
+    delete WIZ.nos[id];
+  }
+  // Desconectar o nó do pai
+  if(WIZ.raiz===noId){WIZ.raiz=null;}
+  else{
+    Object.values(WIZ.nos).forEach(function(n){
+      if(n.proximo===noId)n.proximo=null;
+      if(n.sim_filho===noId)n.sim_filho=null;
+      if(n.nao_filho===noId)n.nao_filho=null;
+    });
+  }
+  delRec(noId);
+  rWizStepFluxo();
+}
+
+function wizEditNo(noId){
+  _wizAddCtx={parentId:null,campo:'edit',editId:noId};
+  rWizFormNo(WIZ.nos[noId]);
+}
+
+/* Formulário de nó (add ou edit) */
+function rWizFormNo(no){
+  var el=document.getElementById('wiz-no-form');
+  if(!el)return;
+  var isDec=no&&no.tipo==='decisao';
+  var isEdit=_wizAddCtx&&_wizAddCtx.campo==='edit';
+  el.innerHTML=
+    '<div style="border:2px solid var(--accent);border-radius:10px;padding:14px;background:var(--color-background-secondary)">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">'+
+      '<i class="ti ti-'+(isEdit?'edit':'plus')+'" style="font-size:13px"></i> '+(isEdit?'Editando etapa':'Nova etapa')+
+    '</div>'+
+    '<div style="margin-bottom:8px">'+
+      '<input type="text" id="wno-txt" placeholder="Descreva o que acontece nesta etapa..." value="'+(no?no.texto.replace(/"/g,'&quot;'):'')+'" '+
+        'style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
+      '<input type="text" id="wno-resp" placeholder="Nome do responsável" value="'+(no?no.responsavel.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wno-cargo" placeholder="Cargo" value="'+(no?no.cargo.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" id="wno-perfil" placeholder="Perfil" value="'+(no?no.perfil.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 100px 150px;gap:7px;margin-bottom:10px">'+
+      '<input type="text" id="wno-sis" placeholder="Sistema utilizado" value="'+(no?no.sistema.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
+        '<input type="number" id="wno-tmt" placeholder="0" min="0" value="'+(no&&no.tmt>0?no.tmt:'')+'" style="width:36px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
+        '<span style="font-size:10px;color:var(--color-text-secondary)">min TMT</span>'+
+      '</div>'+
+      '<select id="wno-tipo" onchange="rWizFormDecOpts()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+        '<option value="sequencial"'+((!no||no.tipo==='sequencial')?' selected':'')+'>→ Sequencial</option>'+
+        '<option value="decisao"'+(no&&no.tipo==='decisao'?' selected':'')+'>◇ Decisão</option>'+
+      '</select>'+
+    '</div>'+
+    '<div id="wno-dec-opts" style="display:'+(isDec?'block':'none')+';background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid var(--color-border-tertiary)">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
+          '<input type="text" id="wno-siml" value="'+(no?no.sim_label:'Sim')+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
+          '<input type="text" id="wno-naol" value="'+(no?no.nao_label:'Não')+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:space-between">'+
+      '<button class="btn sm" onclick="wizCancelFormNo()"><i class="ti ti-x"></i> Cancelar</button>'+
+      '<button class="btn primary" onclick="wizSalvarNo()"><i class="ti ti-check"></i> '+(isEdit?'Atualizar':'Adicionar')+'</button>'+
+    '</div>'+
+    '</div>';
+}
+
+function rWizFormDecOpts(){
+  var tipo=(document.getElementById('wno-tipo')||{}).value;
+  var df=document.getElementById('wno-dec-opts');
+  if(df)df.style.display=tipo==='decisao'?'block':'none';
+}
+
+function wizCancelFormNo(){
+  _wizAddCtx=null;
+  var el=document.getElementById('wiz-no-form');
+  if(el)el.innerHTML='';
+}
+
+function wizSalvarNo(){
+  try{
+    var txt=(document.getElementById('wno-txt')||{}).value||'';
+    if(!txt.trim()){alert('Descreva a etapa.');return;}
+    var tipo=(document.getElementById('wno-tipo')||{}).value||'sequencial';
+    var isEdit=_wizAddCtx&&_wizAddCtx.campo==='edit';
+    var no=isEdit?WIZ.nos[_wizAddCtx.editId]:mkNo(tipo);
+    no.texto=txt.trim();
+    no.tipo=tipo;
+    no.responsavel=((document.getElementById('wno-resp')||{}).value||'').trim();
+    no.cargo=((document.getElementById('wno-cargo')||{}).value||'').trim();
+    no.perfil=((document.getElementById('wno-perfil')||{}).value||'').trim();
+    no.sistema=((document.getElementById('wno-sis')||{}).value||'').trim();
+    no.tmt=parseInt((document.getElementById('wno-tmt')||{}).value)||0;
+    if(tipo==='decisao'){
+      no.sim_label=(document.getElementById('wno-siml')||{}).value||'Sim';
+      no.nao_label=(document.getElementById('wno-naol')||{}).value||'Não';
+      if(!isEdit){no.sim_filho=null;no.nao_filho=null;}
+    } else {
+      if(!isEdit){no.proximo=null;}
+    }
+    if(!isEdit){
+      WIZ.nos[no.id]=no;
+      var ctx=_wizAddCtx;
+      if(ctx.campo==='raiz'){WIZ.raiz=no.id;}
+      else if(ctx.parentId&&WIZ.nos[ctx.parentId]){
+        var field=ctx.campo==='proximo'?'proximo':ctx.campo==='sim'?'sim_filho':'nao_filho';
+        WIZ.nos[ctx.parentId][field]=no.id;
+      }
+    }
+    _wizAddCtx=null;
+    rWizStepFluxo();
+  }catch(err){alert('Erro: '+err.message);}
+}
+
+/* ---------- Helpers steps 1-5 ---------- */
+function wizAddSys(){WIZ.sistemas.push({nome:'',funcao:''});rWizSys();}
+function rWizSys(){
+  var el=document.getElementById('wiz-sys-list');if(!el)return;
+  if(!WIZ.sistemas.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhum sistema.</p>';return;}
+  el.innerHTML=WIZ.sistemas.map(function(s,i){
+    return '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px">'+
+      '<input type="text" placeholder="Nome do sistema" value="'+s.nome.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].nome=this.value" id="wiz-sys-nome-'+i+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<input type="text" placeholder="Para que usa?" value="'+s.funcao.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].funcao=this.value" id="wiz-sys-func-'+i+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<button class="btn sm danger" onclick="WIZ.sistemas.splice('+i+',1);rWizSys()"><i class="ti ti-x"></i></button>'+
+    '</div>';
+  }).join('');
+}
+function wizAddDor(){WIZ.dores.push({descricao:'',impacto:'medio'});rWizDores();}
+function rWizDores(){
+  var el=document.getElementById('wiz-dor-list');if(!el)return;
+  if(!WIZ.dores.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma dor.</p>';return;}
+  el.innerHTML=WIZ.dores.map(function(d,i){
+    return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:8px">'+
+      '<input type="text" placeholder="Descreva a dor..." value="'+d.descricao.replace(/"/g,'&quot;')+'" oninput="WIZ.dores['+i+'].descricao=this.value" id="wiz-dor-inp-'+i+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+      '<select onchange="WIZ.dores['+i+'].impacto=this.value" style="width:100px;padding:6px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+        '<option value="alto"'+(d.impacto==='alto'?' selected':'')+'>Alto</option>'+
+        '<option value="medio"'+(d.impacto==='medio'?' selected':'')+'>Médio</option>'+
+        '<option value="baixo"'+(d.impacto==='baixo'?' selected':'')+'>Baixo</option>'+
+      '</select>'+
+      '<button class="btn sm danger" onclick="WIZ.dores.splice('+i+',1);rWizDores()"><i class="ti ti-x"></i></button>'+
+    '</div>';
+  }).join('');
+}
+function wizAddOp(){WIZ.oportunidades.push({titulo:'',descricao:'',tipo:'automacao',esforco:'baixo',impacto:'alto'});rWizOps();}
+function rWizOps(){
+  var el=document.getElementById('wiz-op-list');if(!el)return;
+  if(!WIZ.oportunidades.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma oportunidade.</p>';return;}
+  el.innerHTML=WIZ.oportunidades.map(function(o,i){
+    var cl=classify(o);
+    return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px;margin-bottom:8px">'+
+      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px">'+
+        '<span class="badge '+clC[cl]+'">'+clL[cl]+'</span>'+
+        '<button class="btn sm danger" onclick="WIZ.oportunidades.splice('+i+',1);rWizOps()" style="margin-left:auto"><i class="ti ti-x"></i></button>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
+        '<input type="text" placeholder="Título" value="'+o.titulo.replace(/"/g,'&quot;')+'" oninput="WIZ.oportunidades['+i+'].titulo=this.value" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+        '<select onchange="WIZ.oportunidades['+i+'].tipo=this.value" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="automacao"'+(o.tipo==='automacao'?' selected':'')+'>Automação</option>'+
+          '<option value="processo"'+(o.tipo==='processo'?' selected':'')+'>Processo</option>'+
+          '<option value="tecnologia"'+(o.tipo==='tecnologia'?' selected':'')+'>Tecnologia</option>'+
+        '</select>'+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
+        '<select onchange="WIZ.oportunidades['+i+'].esforco=this.value;rWizOps()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="baixo"'+(o.esforco==='baixo'?' selected':'')+'>Esforço: Baixo</option>'+
+          '<option value="medio"'+(o.esforco==='medio'?' selected':'')+'>Esforço: Médio</option>'+
+          '<option value="alto"'+(o.esforco==='alto'?' selected':'')+'>Esforço: Alto</option>'+
+        '</select>'+
+        '<select onchange="WIZ.oportunidades['+i+'].impacto=this.value;rWizOps()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+          '<option value="alto"'+(o.impacto==='alto'?' selected':'')+'>Impacto: Alto</option>'+
+          '<option value="medio"'+(o.impacto==='medio'?' selected':'')+'>Impacto: Médio</option>'+
+          '<option value="baixo"'+(o.impacto==='baixo'?' selected':'')+'>Impacto: Baixo</option>'+
+        '</select>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ---------- Save ---------- */
 function wizSave2Step(){
-  if(WIZ.step===0){WIZ.nome=((document.getElementById('wiz-nome')||{}).value||'').trim()||WIZ.nome||'';WIZ.tipo=((document.getElementById('wiz-tipo')||{}).value)||WIZ.tipo||'atendimento';WIZ.responsavel=((document.getElementById('wiz-resp')||{}).value||'').trim();WIZ.cargo=((document.getElementById('wiz-cargo')||{}).value||'').trim();WIZ.cliente=((document.getElementById('wiz-cliente')||{}).value||'').trim();WIZ.data=((document.getElementById('wiz-data')||{}).value||'').trim();WIZ.an=((document.getElementById('wiz-an')||{}).value||'').trim();WIZ.descricao=((document.getElementById('wiz-desc')||{}).value||'').trim();}
-  if(WIZ.step===1){WIZ.perfis=((document.getElementById('wiz-perfis')||{}).value||'').trim();WIZ.doc=((document.getElementById('wiz-doc')||{}).value)||WIZ.doc||'nao';}
-  if(WIZ.step===2){WIZ.integTipo=((document.getElementById('wiz-integ')||{}).value)||WIZ.integTipo||'nao';WIZ.integDesc=((document.getElementById('wiz-integ-desc')||{}).value||'').trim();}
-  if(WIZ.step===3){WIZ.volume=((document.getElementById('wiz-vol')||{}).value||'');WIZ.tma=((document.getElementById('wiz-tma')||{}).value||'').trim();WIZ.sla=((document.getElementById('wiz-sla')||{}).value||'').trim();WIZ.performance=((document.getElementById('wiz-perf')||{}).value)||'';WIZ.equipe=((document.getElementById('wiz-equipe')||{}).value||'');WIZ.sazonalidade=((document.getElementById('wiz-sazon')||{}).value||'').trim();}
+  if(WIZ.step===0){
+    WIZ.nome=((document.getElementById('wiz-nome')||{}).value||'').trim()||WIZ.nome||'';
+    WIZ.tipo=(document.getElementById('wiz-tipo')||{}).value||WIZ.tipo||'atendimento';
+    WIZ.responsavel=((document.getElementById('wiz-resp')||{}).value||'').trim();
+    WIZ.cargo=((document.getElementById('wiz-cargo')||{}).value||'').trim();
+    WIZ.cliente=((document.getElementById('wiz-cliente')||{}).value||'').trim();
+    WIZ.data=((document.getElementById('wiz-data')||{}).value||'').trim();
+    WIZ.an=((document.getElementById('wiz-an')||{}).value||'').trim();
+    WIZ.descricao=((document.getElementById('wiz-desc')||{}).value||'').trim();
+  }
+  if(WIZ.step===1){WIZ.perfis=((document.getElementById('wiz-perfis')||{}).value||'').trim();}
+  if(WIZ.step===2){WIZ.integTipo=(document.getElementById('wiz-integ')||{}).value||'nao';WIZ.integDesc=((document.getElementById('wiz-integ-desc')||{}).value||'').trim();}
+  if(WIZ.step===3){WIZ.volume=((document.getElementById('wiz-vol')||{}).value||'');WIZ.tma=((document.getElementById('wiz-tma')||{}).value||'').trim();WIZ.sla=((document.getElementById('wiz-sla')||{}).value||'').trim();WIZ.performance=(document.getElementById('wiz-perf')||{}).value||'';WIZ.equipe=((document.getElementById('wiz-equipe')||{}).value||'');WIZ.sazonalidade=((document.getElementById('wiz-sazon')||{}).value||'').trim();}
   if(WIZ.step===4){WIZ.dorPrincipal=((document.getElementById('wiz-dor-p')||{}).value||'').trim();WIZ.retrabalho=((document.getElementById('wiz-retrab')||{}).value||'').trim();}
 }
 function wizNext(){wizSave2Step();if(WIZ.step<6){WIZ.step++;rWizStep();}}
 function wizPrev(){wizSave2Step();if(WIZ.step>0){WIZ.step--;rWizStep();}}
-function wizAddStep(){
-  WIZ.etapas.push(mkEtapa());
-  rWizSteps();
-  // Scroll para o novo item
-  setTimeout(function(){var el=document.getElementById('wiz-st-list');if(el)el.lastElementChild&&el.lastElementChild.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
-}
-function wizDelStep(i){WIZ.etapas.splice(i,1);rWizSteps();}
-function wizSalvarEtapa(){
-  try{
-    var txt=(document.getElementById('wiz-new-txt')||{}).value||'';
-    if(!txt.trim()){alert('Descreva a etapa antes de salvar.');return;}
-    var resp=(document.getElementById('wiz-new-resp')||{}).value||'';
-    var cargo=(document.getElementById('wiz-new-cargo')||{}).value||'';
-    var perfil=(document.getElementById('wiz-new-perfil')||{}).value||'';
-    var sis=(document.getElementById('wiz-new-sis')||{}).value||'';
-    var tmtRaw=(document.getElementById('wiz-new-tmt')||{}).value||'0';
-    var tmt=parseInt(tmtRaw)||0;
-    var tipo=(document.getElementById('wiz-new-tipo')||{}).value||'sequencial';
-    var simLbl='Sim',naoLbl='Não',simGoto=null,naoGoto=null;
-    if(tipo==='decisao'){
-      var slEl=document.getElementById('wiz-new-siml');
-      var nlEl=document.getElementById('wiz-new-naol');
-      var sgEl=document.getElementById('wiz-new-sim');
-      var ngEl=document.getElementById('wiz-new-nao');
-      if(slEl)simLbl=slEl.value||'Sim';
-      if(nlEl)naoLbl=nlEl.value||'Não';
-      if(sgEl&&sgEl.value)simGoto=sgEl.value==='FIM'?'FIM':parseInt(sgEl.value);
-      if(ngEl&&ngEl.value)naoGoto=ngEl.value==='FIM'?'FIM':parseInt(ngEl.value);
-    }
-    var et=mkEtapa();
-    et.texto=txt.trim();
-    et.responsavel=resp.trim();
-    et.cargo=cargo.trim();
-    et.perfil=perfil.trim();
-    et.sistema=sis.trim();
-    et.tmt=tmt;
-    et.tipo=tipo;
-    et.sim_goto=simGoto;
-    et.nao_goto=naoGoto;
-    et.sim_label=simLbl;
-    et.nao_label=naoLbl;
-    WIZ.etapas.push(et);
-    rWizSteps();
-  }catch(err){
-    alert('Erro ao salvar etapa: '+err.message);
-  }
-}
-function rWizNewForm(){
-  var el=document.getElementById('wiz-new-form');
-  if(!el)return;
-  var nOpts=WIZ.etapas.map(function(x,j){return '<option value="'+(j+1)+'">Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';}).join('');
-  el.innerHTML=
-    '<div style="border:1px solid var(--color-border-tertiary);border-radius:10px;padding:12px 14px;background:var(--color-background-secondary)">'+
-    '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Nova etapa</div>'+
-    '<div style="margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-txt" placeholder="Descreva o que acontece nesta etapa..." style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-resp" placeholder="Nome do responsável" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wiz-new-cargo" placeholder="Cargo (ex: Supervisor)" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wiz-new-perfil" placeholder="Perfil (ex: Backoffice)" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 100px 140px;gap:7px;margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-sis" placeholder="Sistema utilizado" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
-        '<input type="number" id="wiz-new-tmt" placeholder="0" min="0" style="width:40px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
-        '<span style="font-size:11px;color:var(--color-text-secondary);white-space:nowrap">min (TMT)</span>'+
-      '</div>'+
-      '<select id="wiz-new-tipo" onchange="rWizDecFields()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-        '<option value="sequencial">→ Sequencial</option>'+
-        '<option value="decisao">◇ Decisão</option>'+
-      '</select>'+
-    '</div>'+
-    '<div id="wiz-dec-fields" style="display:none;background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--color-border-tertiary)">'+
-      '<div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Configurar decisão</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
-        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
-          '<input type="text" id="wiz-new-siml" value="Sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
-          '<input type="text" id="wiz-new-naol" value="Não" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
-        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">SIM → vai para</label>'+
-          '<select id="wiz-new-sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
-        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">NÃO → vai para</label>'+
-          '<select id="wiz-new-nao" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
-      '</div>'+
-    '</div>'+
-    '<div style="display:flex;justify-content:flex-end">'+
-      '<button class="btn primary" onclick="wizSalvarEtapa()"><i class="ti ti-check"></i> Salvar etapa</button>'+
-    '</div>'+
-    '</div>';
-}
-function wizEditStep(i){
-  var e=WIZ.etapas[i];
-  if(!e)return;
-  // Preenche o formulário de nova etapa com os dados da etapa existente
-  // e muda o botão de Salvar para Atualizar
-  var nf=document.getElementById('wiz-new-form');
-  if(!nf)return;
-  var nOpts=WIZ.etapas.map(function(x,j){
-    return '<option value="'+(j+1)+'"'+(e.sim_goto===(j+1)?' selected':'')+'>Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';
-  }).join('');
-  var nOptsN=WIZ.etapas.map(function(x,j){
-    return '<option value="'+(j+1)+'"'+(e.nao_goto===(j+1)?' selected':'')+'>Etapa '+(j+1)+' — '+(x.texto.substring(0,20)||'')+'</option>';
-  }).join('');
-  nf.innerHTML=
-    '<div style="border:2px solid #0a3d6b;border-radius:10px;padding:12px 14px;background:var(--color-background-secondary)">'+
-    '<div style="font-size:11px;font-weight:600;color:#0a3d6b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px"><i class="ti ti-edit" style="font-size:13px"></i> Editando etapa '+(i+1)+'</div>'+
-    '<div style="margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-txt" value="'+e.texto.replace(/"/g,'&quot;')+'" placeholder="Descreva o que acontece nesta etapa..." style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-resp" placeholder="Nome do responsável" value="'+e.responsavel.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wiz-new-cargo" placeholder="Cargo (ex: Supervisor)" value="'+e.cargo.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wiz-new-perfil" placeholder="Perfil (ex: Backoffice)" value="'+e.perfil.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 100px 140px;gap:7px;margin-bottom:8px">'+
-      '<input type="text" id="wiz-new-sis" placeholder="Sistema utilizado" value="'+e.sistema.replace(/"/g,'&quot;')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
-        '<input type="number" id="wiz-new-tmt" placeholder="0" min="0" value="'+(e.tmt||'')+'" style="width:40px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
-        '<span style="font-size:11px;color:var(--color-text-secondary);white-space:nowrap">min (TMT)</span>'+
-      '</div>'+
-      '<select id="wiz-new-tipo" onchange="rWizDecFields()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-        '<option value="sequencial"'+(e.tipo==='sequencial'?' selected':'')+'>→ Sequencial</option>'+
-        '<option value="decisao"'+(e.tipo==='decisao'?' selected':'')+'>◇ Decisão</option>'+
-      '</select>'+
-    '</div>'+
-    '<div id="wiz-dec-fields" style="display:'+(e.tipo==='decisao'?'block':'none')+';background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:8px;border:1px solid var(--color-border-tertiary)">'+
-      '<div style="font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px">Configurar decisão</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
-        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
-          '<input type="text" id="wiz-new-siml" value="'+e.sim_label+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
-          '<input type="text" id="wiz-new-naol" value="'+e.nao_label+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
-        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">SIM → vai para</label>'+
-          '<select id="wiz-new-sim" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOpts+'</select></div>'+
-        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">NÃO → vai para</label>'+
-          '<select id="wiz-new-nao" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="">Próxima etapa</option><option value="FIM">→ FIM (encerrar)</option>'+nOptsN+'</select></div>'+
-      '</div>'+
-    '</div>'+
-    '<div style="display:flex;justify-content:space-between;align-items:center">'+
-      '<button class="btn sm" onclick="rWizSteps()" style="color:var(--color-text-secondary)"><i class="ti ti-x"></i> Cancelar</button>'+
-      '<button class="btn primary" onclick="wizAtualizarStep('+i+')"><i class="ti ti-check"></i> Atualizar etapa</button>'+
-    '</div>'+
-    '</div>';
+
+function calcScore(d){
+  var p=0;
+  if(d.descricao&&d.descricao.length>20)p+=20;
+  var nos=Object.values(d.nos||{});
+  if(nos.length>=2)p+=20;
+  if(d.sistemas&&d.sistemas.filter(function(s){return s.nome&&s.nome.trim();}).length>=1)p+=15;
+  if(d.volume||d.sla)p+=15;
+  if(d.dores&&d.dores.filter(function(x){return x.descricao&&x.descricao.trim();}).length>=1)p+=15;
+  if(d.oportunidades&&d.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim();}).length>=1)p+=15;
+  return p;
 }
 
-function wizAtualizarStep(i){
-  try{
-    var txt=(document.getElementById('wiz-new-txt')||{}).value||'';
-    if(!txt.trim()){alert('Descreva a etapa antes de salvar.');return;}
-    var e=WIZ.etapas[i];
-    e.texto=txt.trim();
-    e.responsavel=((document.getElementById('wiz-new-resp')||{}).value||'').trim();
-    e.cargo=((document.getElementById('wiz-new-cargo')||{}).value||'').trim();
-    e.perfil=((document.getElementById('wiz-new-perfil')||{}).value||'').trim();
-    e.sistema=((document.getElementById('wiz-new-sis')||{}).value||'').trim();
-    e.tmt=parseInt((document.getElementById('wiz-new-tmt')||{}).value)||0;
-    e.tipo=(document.getElementById('wiz-new-tipo')||{}).value||'sequencial';
-    if(e.tipo==='decisao'){
-      var sv=(document.getElementById('wiz-new-sim')||{}).value||'';
-      var nv=(document.getElementById('wiz-new-nao')||{}).value||'';
-      e.sim_goto=sv==='FIM'?'FIM':sv?parseInt(sv):null;
-      e.nao_goto=nv==='FIM'?'FIM':nv?parseInt(nv):null;
-      e.sim_label=(document.getElementById('wiz-new-siml')||{}).value||'Sim';
-      e.nao_label=(document.getElementById('wiz-new-naol')||{}).value||'Não';
-    }else{
-      e.sim_goto=null;e.nao_goto=null;
-    }
-    rWizSteps();
-  }catch(err){alert('Erro: '+err.message);}
-}
-
-function rWizDecFields(){
-  var tipo=(document.getElementById('wiz-new-tipo')||{}).value;
-  var df=document.getElementById('wiz-dec-fields');
-  if(df)df.style.display=tipo==='decisao'?'block':'none';
-}
-function rWizSteps(){
-  var el=document.getElementById('wiz-st-list');
-  if(!el)return;
-  if(!WIZ.etapas.length){
-    el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:12px">Nenhuma etapa cadastrada ainda.</p>';
-  } else {
-    el.innerHTML=WIZ.etapas.map(function(e,i){
-      var isDec=e.tipo==='decisao';
-      var slaText=e.tmt>0?e.tmt+'min':'—';
-      var respText=[e.responsavel,e.cargo,e.perfil].filter(Boolean).join(' · ')||'—';
-      return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:9px 12px;margin-bottom:5px;border-left:3px solid '+(isDec?'#BA7517':'#1D9E75')+';display:flex;align-items:center;gap:8px">'+
-        '<span style="background:'+(isDec?'#fef3c7':'#ede9fe')+';color:'+(isDec?'#92400e':'#5b21b6')+';border-radius:50%;width:22px;height:22px;min-width:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">'+(i+1)+'</span>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:12.5px;font-weight:500;color:var(--color-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+
-            (isDec?'<span style="color:#BA7517;font-size:11px;margin-right:4px">◇</span>':'')+e.texto+
-          '</div>'+
-          '<div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px">'+
-            (e.responsavel||e.cargo||e.perfil?'<span style="margin-right:8px"><i class="ti ti-user" style="font-size:10px"></i> '+respText+'</span>':'')+
-            (e.sistema?'<span style="margin-right:8px"><i class="ti ti-server" style="font-size:10px"></i> '+e.sistema+'</span>':'')+
-            (e.tmt>0?'<span><i class="ti ti-clock" style="font-size:10px"></i> '+e.tmt+'min</span>':'')+
-          '</div>'+
-        '</div>'+
-        '<button class="btn sm" onclick="wizEditStep('+i+')" title="Editar" style="margin-right:4px"><i class="ti ti-edit"></i></button>'+
-      '<button class="btn sm danger" onclick="wizDelStep('+i+')" title="Remover"><i class="ti ti-trash"></i></button>'+
-      '</div>';
-    }).join('');
-  }
-  // Renderizar o formulário de nova etapa
-  rWizNewForm();
-}
-function wizAddSys(){WIZ.sistemas.push({nome:'',funcao:''});rWizSys();}
-function rWizSys(){var el=document.getElementById('wiz-sys-list');if(!el)return;if(!WIZ.sistemas.length){el.innerHTML='<p style="font-size:12.5px;color:var(--text-secondary)">Nenhum sistema. Adicione o primeiro.</p>';return;}el.innerHTML=WIZ.sistemas.map(function(s,i){return '<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px"><input type="text" placeholder="Nome do sistema" value="'+s.nome.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].nome=this.value" id="wiz-sys-nome-'+i+'"><input type="text" placeholder="Para que usa?" value="'+s.funcao.replace(/"/g,'&quot;')+'" oninput="WIZ.sistemas['+i+'].funcao=this.value" id="wiz-sys-func-'+i+'"><button class="btn sm danger" onclick="WIZ.sistemas.splice('+i+',1);rWizSys()"><i class="ti ti-x"></i></button></div>';}).join('');}
-function wizAddDor(){WIZ.dores.push({descricao:'',impacto:'medio'});rWizDores();}
-function rWizDores(){var el=document.getElementById('wiz-dor-list');if(!el)return;if(!WIZ.dores.length){el.innerHTML='<p style="font-size:12.5px;color:var(--text-secondary)">Nenhuma dor registrada.</p>';return;}el.innerHTML=WIZ.dores.map(function(d,i){return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:8px"><input type="text" placeholder="Descreva a dor ou problema..." value="'+d.descricao.replace(/"/g,'&quot;')+'" oninput="WIZ.dores['+i+'].descricao=this.value" id="wiz-dor-inp-'+i+'"><select onchange="WIZ.dores['+i+'].impacto=this.value" style="width:110px"><option value="alto"'+(d.impacto==='alto'?' selected':'')+'>Alto</option><option value="medio"'+(d.impacto==='medio'?' selected':'')+'>Médio</option><option value="baixo"'+(d.impacto==='baixo'?' selected':'')+'>Baixo</option></select><button class="btn sm danger" onclick="WIZ.dores.splice('+i+',1);rWizDores()"><i class="ti ti-x"></i></button></div>';}).join('');}
-function wizAddOp(){WIZ.oportunidades.push({titulo:'',descricao:'',tipo:'automacao',esforco:'baixo',impacto:'alto'});rWizOps();}
-function wizOpTitulo(i,val){WIZ.oportunidades[i].titulo=val;}
-function wizOpChangeBadge(i){var o=WIZ.oportunidades[i];var cl=classify(o);var badge=document.getElementById('wiz-op-badge-'+i);if(badge){badge.className='badge '+clC[cl];badge.textContent=clL[cl];}}
-function rWizOps(){var el=document.getElementById('wiz-op-list');if(!el)return;if(!WIZ.oportunidades.length){el.innerHTML='<p style="font-size:12.5px;color:var(--text-secondary)">Nenhuma oportunidade.</p>';return;}el.innerHTML=WIZ.oportunidades.map(function(o,i){var cl=classify(o);return '<div style="border:1px solid var(--border-light);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px"><div style="display:flex;gap:7px;margin-bottom:8px;align-items:center"><span class="badge '+clC[cl]+'" id="wiz-op-badge-'+i+'">'+clL[cl]+'</span><button class="btn sm danger" onclick="WIZ.oportunidades.splice('+i+',1);rWizOps()" style="margin-left:auto"><i class="ti ti-x"></i></button></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px"><input type="text" placeholder="Título" value="'+o.titulo.replace(/"/g,'&quot;')+'" oninput="wizOpTitulo('+i+',this.value)"><select onchange="WIZ.oportunidades['+i+'].tipo=this.value"><option value="automacao"'+(o.tipo==='automacao'?' selected':'')+'>Automação</option><option value="processo"'+(o.tipo==='processo'?' selected':'')+'>Processo</option><option value="tecnologia"'+(o.tipo==='tecnologia'?' selected':'')+'>Tecnologia</option><option value="negocio"'+(o.tipo==='negocio'?' selected':'')+'>Negócio</option></select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><select onchange="WIZ.oportunidades['+i+'].esforco=this.value;wizOpChangeBadge('+i+')"><option value="baixo"'+(o.esforco==='baixo'?' selected':'')+'>Esforço: Baixo</option><option value="medio"'+(o.esforco==='medio'?' selected':'')+'>Esforço: Médio</option><option value="alto"'+(o.esforco==='alto'?' selected':'')+'>Esforço: Alto</option></select><select onchange="WIZ.oportunidades['+i+'].impacto=this.value;wizOpChangeBadge('+i+')"><option value="alto"'+(o.impacto==='alto'?' selected':'')+'>Impacto: Alto</option><option value="medio"'+(o.impacto==='medio'?' selected':'')+'>Impacto: Médio</option><option value="baixo"'+(o.impacto==='baixo'?' selected':'')+'>Impacto: Baixo</option></select></div></div>';}).join('');}
-function wizSave(){wizSave2Step();if(!WIZ.projetoId||!WIZ.nome){alert('Preencha projeto e nome (aba Identificação).');WIZ.step=0;rWizStep();return;}WIZ.score=calcScore(WIZ);WIZ.oportunidades=WIZ.oportunidades.map(function(o){o.classificacao=classify(o);return o;});
+function wizSave(){
+  wizSave2Step();
+  if(!WIZ.projetoId||!WIZ.nome){alert('Preencha projeto e nome (aba Identificação).');WIZ.step=0;rWizStep();return;}
+  WIZ.score=calcScore(WIZ);
+  WIZ.oportunidades=WIZ.oportunidades.map(function(o){o.classificacao=classify(o);return o;});
   var isEdit=!!WIZ._editId;
   if(isEdit){
     var idx=DB.m1.processos.findIndex(function(p){return p.id===WIZ._editId;});
@@ -785,23 +1027,27 @@ function wizSave(){wizSave2Step();if(!WIZ.projetoId||!WIZ.nome){alert('Preencha 
     WIZ.id=Date.now();
     DB.m1.processos.push(JSON.parse(JSON.stringify(WIZ)));
   }
-  WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).forEach(function(o){if(!DB.m3.ops.some(function(x){return x.titulo.toLowerCase()===o.titulo.trim().toLowerCase()}))DB.m3.ops.push({id:Date.now()+Math.random(),titulo:o.titulo.trim(),tipo:o.tipo||'automacao',esforco:o.esforco||'medio',impacto:o.impacto||'alto',status:'ideia',responsavel:'',origem:WIZ.nome||'',descricao:o.descricao||'',classificacao:o.classificacao,progresso:0});});
-  WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).forEach(function(s){if(!DB.m2.sistemas.some(function(x){return x.nome.toLowerCase()===s.nome.trim().toLowerCase()}))DB.m2.sistemas.push({id:Date.now()+Math.random(),nome:s.nome.trim(),categoria:'outro',criticidade:'media',finalidade:s.funcao||'',operacoes:WIZ.nome||''});});
-  svDB();alert(isEdit?'Processo atualizado! Score: '+WIZ.score+'%':'Processo salvo! Score: '+WIZ.score+'%');nav('m1-proc');}
+  WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim();}).forEach(function(o){
+    if(!DB.m3.ops.some(function(x){return x.titulo.toLowerCase()===o.titulo.trim().toLowerCase();}))
+      DB.m3.ops.push({id:Date.now()+Math.random(),titulo:o.titulo.trim(),tipo:o.tipo||'automacao',esforco:o.esforco||'medio',impacto:o.impacto||'alto',status:'ideia',responsavel:'',origem:WIZ.nome||'',descricao:o.descricao||'',classificacao:o.classificacao,progresso:0});
+  });
+  WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim();}).forEach(function(s){
+    if(!DB.m2.sistemas.some(function(x){return x.nome.toLowerCase()===s.nome.trim().toLowerCase();}))
+      DB.m2.sistemas.push({id:Date.now()+Math.random(),nome:s.nome.trim(),categoria:'outro',criticidade:'media',finalidade:s.funcao||'',operacoes:WIZ.nome||''});
+  });
+  svDB();
+  alert(isEdit?'Processo atualizado! Score: '+WIZ.score+'%':'Processo salvo! Score: '+WIZ.score+'%');
+  nav('m1-proc');
+}
+
 
 function editProcesso(id){
   var p=DB.m1.processos.find(function(x){return x.id===id;});
   if(!p)return;
   WIZ=JSON.parse(JSON.stringify(p));
-  // Migrar steps[] antigo para etapas[] novo
-  if(!WIZ.etapas||!WIZ.etapas.length){
-    var oldSteps=WIZ.steps||[];
-    WIZ.etapas=oldSteps.map(function(s){
-      var et=mkEtapa();
-      et.texto=typeof s==='string'?s:(s.texto||'');
-      return et;
-    });
-  }
+  // Garantir estrutura nova
+  if(!WIZ.nos)WIZ.nos={};
+  if(!WIZ.raiz)WIZ.raiz=null;
   WIZ._editId=id;
   WIZ.step=0;
   // Ativar a view manualmente sem chamar initWiz (que resetaria o WIZ)
@@ -871,412 +1117,278 @@ function expM5HTML(){var h='<!DOC'+'TYPE html><html lang="pt-BR"><head><meta cha
 function dl(blob,name){var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
 
 function abrirFluxograma(){
-  var etapas = (WIZ.etapas||[]).filter(function(e){return e.texto && e.texto.trim();});
-  if(!etapas.length){alert('Adicione pelo menos uma etapa ao fluxo.');return;}
-  var nome = WIZ.nome || 'Processo';
-  document.getElementById('fluxo-titulo').textContent = 'Fluxograma AS IS — ' + nome;
-  document.getElementById('fluxo-sub').textContent = etapas.length + ' etapas · ' + (WIZ.perfis || 'Perfis não informados');
+  var nos=WIZ.nos||{};
+  if(!WIZ.raiz||Object.keys(nos).length===0){alert('Adicione pelo menos uma etapa ao fluxo.');return;}
+  var nome=WIZ.nome||'Processo';
+  document.getElementById('fluxo-titulo').textContent='Fluxograma AS IS — '+nome;
+  document.getElementById('fluxo-sub').textContent=Object.keys(nos).length+' etapas · '+(WIZ.perfis||'Perfis não informados');
   openModal('modal-fluxograma');
-  setTimeout(function(){ renderFluxograma(etapas, nome); }, 100);
+  setTimeout(function(){renderFluxograma(WIZ.nos,WIZ.raiz,nome);},100);
 }
 
-function renderFluxograma(etapas, nome) {
-  var canvas = document.getElementById('fluxograma-canvas');
-  var ctx = canvas.getContext('2d');
-  var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-  // === Cores ===
-  var C = {
-    bg:       isDark ? '#1c1c2e' : '#f8f9fa',
-    boxFill:  isDark ? '#16213e' : '#ffffff',
+/* ===== renderFluxograma com DFS ===== */
+function renderFluxograma(nos,raiz,nome){
+  var canvas=document.getElementById('fluxograma-canvas');
+  var ctx=canvas.getContext('2d');
+  var isDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
+  var C={
+    bg:isDark?'#1c1c2e':'#f8f9fa',
+    boxFill:isDark?'#16213e':'#ffffff',
     boxStroke:'#0a3d6b',
-    decFill:  isDark ? '#2a2010' : '#fef9ec',
+    decFill:isDark?'#2a2010':'#fef9ec',
     decStroke:'#BA7517',
-    text:     isDark ? '#e8eaed' : '#1a1a2e',
-    sub:      isDark ? '#9098a9' : '#555b6e',
-    arrow:    '#0a3d6b',
-    start:    '#0a3d6b',
-    end:      '#1D9E75',
-    simColor: '#1D9E75',
-    naoColor: '#E24B4A',
-    warnFill: isDark ? '#2a1a10' : '#fff8ed',
-    warnStroke:'#EF9F27',
-    critFill: isDark ? '#2a1010' : '#fff0f0',
-    critStroke:'#E24B4A',
-    swimBg:   isDark ? 'rgba(255,255,255,0.04)' : 'rgba(10,61,107,0.04)',
-    swimLine: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(10,61,107,0.15)',
+    text:isDark?'#e8eaed':'#1a1a2e',
+    sub:isDark?'#9098a9':'#555b6e',
+    arrow:'#0a3d6b',
+    sim:'#1D9E75',
+    nao:'#E24B4A',
+    start:'#0a3d6b',
+    end:'#1D9E75',
   };
 
-  // === Calcular SLA máximo para normalizar gargalo ===
-  var slaMax = 0;
-  etapas.forEach(function(e){ if(e.sla_min>slaMax) slaMax=e.sla_min; });
+  // === Layout DFS: calcular posições de cada nó ===
+  // Cada nó ocupa (boxW+gapX) x (boxH+gapY)
+  // Bifurcações expandem para baixo independentemente
+  var boxW=210,boxH=64,gapX=48,gapY=44,decH=72;
+  var positions={};  // id → {x,y,cx,cy}
+  var visited={};
+  var maxX=0,maxY=0;
 
-  // === Calcular swimlanes (responsáveis únicos) ===
-  var responsaveis = [];
-  etapas.forEach(function(e){
-    var r = e.responsavel && e.responsavel.trim() ? e.responsavel.trim() : '';
-    if(r && responsaveis.indexOf(r)<0) responsaveis.push(r);
-  });
-  var hasSwimlanes = responsaveis.length > 1;
-
-  // === Dimensões base ===
-  var boxW = 200, boxH = hasSwimlanes ? 72 : 64, arrowGap = 40;
-  var decW = 220, decH = 72;
-  var padX = 50, padTop = hasSwimlanes ? 100 : 70;
-  var laneH = 0;
-  var cols = Math.min(3, etapas.length);
-  var rows = Math.ceil(etapas.length / cols);
-
-  // === Layout: posições de cada etapa ===
-  var positions = [];
-  var marginX = 50;
-  var colW = boxW + padX;
-  var canvasW = Math.max(cols * colW + marginX * 2, 600);
-
-  // Swimlane: agrupar por responsável (se > 1)
-  var laneMap = {}; // responsavel → y_start
-  var laneOrder = [];
-  if(hasSwimlanes){
-    var etapasPorLane = {};
-    etapas.forEach(function(e,i){
-      var r = e.responsavel&&e.responsavel.trim()?e.responsavel.trim():'(sem responsável)';
-      if(!etapasPorLane[r]) etapasPorLane[r]=[];
-      etapasPorLane[r].push(i);
-    });
-    // Calcular altura de cada lane
-    var laneHeaderH = 32, lanePadV = 20;
-    var currentY = padTop;
-    responsaveis.forEach(function(r){
-      var cnt = etapasPorLane[r] ? etapasPorLane[r].length : 0;
-      var laneRows = Math.ceil(cnt / cols);
-      var h = laneHeaderH + lanePadV + laneRows*(boxH+arrowGap) + lanePadV;
-      laneMap[r] = {y: currentY, h: h, items: etapasPorLane[r]||[]};
-      laneOrder.push(r);
-      currentY += h + 8;
-    });
-    laneH = currentY;
-  }
-
-  // Posição de cada etapa
-  for(var i=0;i<etapas.length;i++){
-    var row = Math.floor(i/cols);
-    var col = i%cols;
-    var dirLtoR = row%2===0;
-    var actualCol = dirLtoR ? col : (cols-1-col);
-    var x, y;
-    if(hasSwimlanes){
-      var r = etapas[i].responsavel&&etapas[i].responsavel.trim()?etapas[i].responsavel.trim():'(sem responsável)';
-      var lane = laneMap[r]||{y:padTop,h:200};
-      var laneItems = lane.items||[];
-      var posInLane = laneItems.indexOf(i);
-      var laneRow = Math.floor(posInLane/cols);
-      var laneCol = posInLane%cols;
-      var laneDirLtoR = laneRow%2===0;
-      var laneActualCol = laneDirLtoR ? laneCol : (cols-1-laneCol);
-      x = marginX + laneActualCol * colW;
-      y = lane.y + 32 + 20 + laneRow*(boxH+arrowGap);
+  // Calcular largura de subárvore de um nó
+  function subtreeWidth(id,depth){
+    if(!id||id==='FIM'||visited[id])return boxW;
+    visited[id]=true;
+    var no=nos[id];
+    if(!no)return boxW;
+    if(no.tipo==='decisao'){
+      var sw=subtreeWidth(no.sim_filho,depth+1);
+      var nw=subtreeWidth(no.nao_filho,depth+1);
+      return Math.max(sw+nw+gapX, boxW);
     } else {
-      x = marginX + actualCol * colW;
-      y = padTop + row*(boxH+arrowGap);
+      return subtreeWidth(no.proximo,depth+1);
     }
-    positions.push({x:x, y:y, cx:x+boxW/2, cy:y+boxH/2});
   }
 
-  // === Canvas size ===
-  var totalH = hasSwimlanes ? laneH + 100 : padTop + rows*(boxH+arrowGap) + 120;
-  canvas.width = canvasW;
-  canvas.height = Math.max(totalH, 300);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.fillStyle = C.bg;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Posicionar nós recursivamente
+  visited={};
+  function placeNode(id,x,y,availW){
+    if(!id||id==='FIM')return y;
+    if(visited[id])return y;
+    visited[id]=true;
+    var no=nos[id];
+    if(!no)return y;
+    var cx=x+availW/2;
+    var cy=y+boxH/2;
+    positions[id]={x:cx-boxW/2,y:y,cx:cx,cy:cy};
+    if(cx>maxX)maxX=cx+boxW/2;
+    if(y+boxH>maxY)maxY=y+boxH;
+    var nextY=y+boxH+gapY;
+    if(no.tipo==='decisao'){
+      var sh=no.sim_filho&&no.sim_filho!=='FIM'&&nos[no.sim_filho]?subtreeWidth(no.sim_filho,0):boxW;
+      var nh=no.nao_filho&&no.nao_filho!=='FIM'&&nos[no.nao_filho]?subtreeWidth(no.nao_filho,0):boxW;
+      visited={};
+      sh=no.sim_filho&&no.sim_filho!=='FIM'&&nos[no.sim_filho]?subtreeWidth(no.sim_filho,0):boxW;
+      visited={};
+      nh=no.nao_filho&&no.nao_filho!=='FIM'&&nos[no.nao_filho]?subtreeWidth(no.nao_filho,0):boxW;
+      visited={};
+      // SIM à esquerda, NÃO à direita
+      var simW=Math.max(sh,boxW)+gapX/2;
+      var naoW=Math.max(nh,boxW)+gapX/2;
+      var totalW=simW+naoW;
+      var simX=x+(availW-totalW)/2;
+      var naoX=simX+simW;
+      var simEndY=placeNode(no.sim_filho,simX,nextY,simW);
+      var naoEndY=placeNode(no.nao_filho,naoX,nextY,naoW);
+      return Math.max(simEndY,naoEndY);
+    } else {
+      return placeNode(no.proximo,x,nextY,availW);
+    }
+  }
+  visited={};
+  var startX=40,startY=80,startW=800;
+  placeNode(raiz,startX,startY,startW);
 
-  // === Funções auxiliares ===
+  // Ajustar canvas
+  canvas.width=Math.max(maxX+60,500);
+  canvas.height=maxY+120;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle=C.bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // === Funções de desenho ===
   function roundRect(x,y,w,h,r,fill,stroke,lw){
     ctx.beginPath();
     ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
     ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
     ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
-    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
-    ctx.closePath();
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
     ctx.fillStyle=fill;ctx.fill();
     if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.5;ctx.stroke();}
   }
   function diamond(cx,cy,w,h,fill,stroke){
-    ctx.beginPath();
-    ctx.moveTo(cx,cy-h/2);ctx.lineTo(cx+w/2,cy);ctx.lineTo(cx,cy+h/2);ctx.lineTo(cx-w/2,cy);
-    ctx.closePath();
+    ctx.beginPath();ctx.moveTo(cx,cy-h/2);ctx.lineTo(cx+w/2,cy);
+    ctx.lineTo(cx,cy+h/2);ctx.lineTo(cx-w/2,cy);ctx.closePath();
     ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=1.5;ctx.stroke();
   }
-  function arrow(x1,y1,x2,y2,color,dashed){
-    var headLen=10,angle=Math.atan2(y2-y1,x2-x1);
-    ctx.beginPath();
-    if(dashed){ctx.setLineDash([5,4]);}else{ctx.setLineDash([]);}
+  function arrowLine(x1,y1,x2,y2,color,dashed){
+    var hl=10,angle=Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath();ctx.setLineDash(dashed?[5,4]:[]);
     ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
-    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2-headLen*Math.cos(angle-Math.PI/6),y2-headLen*Math.sin(angle-Math.PI/6));
-    ctx.lineTo(x2-headLen*Math.cos(angle+Math.PI/6),y2-headLen*Math.sin(angle+Math.PI/6));
+    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-hl*Math.cos(angle-Math.PI/6),y2-hl*Math.sin(angle-Math.PI/6));
+    ctx.lineTo(x2-hl*Math.cos(angle+Math.PI/6),y2-hl*Math.sin(angle+Math.PI/6));
     ctx.closePath();ctx.fillStyle=color;ctx.fill();
   }
   function arrowPath(pts,color,dashed){
-    if(pts.length<2) return;
-    ctx.beginPath();
-    if(dashed){ctx.setLineDash([5,4]);}else{ctx.setLineDash([]);}
+    if(pts.length<2)return;
+    ctx.beginPath();ctx.setLineDash(dashed?[5,4]:[]);
     ctx.moveTo(pts[0].x,pts[0].y);
-    for(var k=1;k<pts.length;k++) ctx.lineTo(pts[k].x,pts[k].y);
-    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();
-    ctx.setLineDash([]);
+    for(var k=1;k<pts.length;k++)ctx.lineTo(pts[k].x,pts[k].y);
+    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();ctx.setLineDash([]);
     var last=pts[pts.length-1],prev=pts[pts.length-2];
-    var angle=Math.atan2(last.y-prev.y,last.x-prev.x),hl=10;
-    ctx.beginPath();
-    ctx.moveTo(last.x,last.y);
-    ctx.lineTo(last.x-hl*Math.cos(angle-Math.PI/6),last.y-hl*Math.sin(angle-Math.PI/6));
-    ctx.lineTo(last.x-hl*Math.cos(angle+Math.PI/6),last.y-hl*Math.sin(angle+Math.PI/6));
+    var ang=Math.atan2(last.y-prev.y,last.x-prev.x),hl=10;
+    ctx.beginPath();ctx.moveTo(last.x,last.y);
+    ctx.lineTo(last.x-hl*Math.cos(ang-Math.PI/6),last.y-hl*Math.sin(ang-Math.PI/6));
+    ctx.lineTo(last.x-hl*Math.cos(ang+Math.PI/6),last.y-hl*Math.sin(ang+Math.PI/6));
     ctx.closePath();ctx.fillStyle=color;ctx.fill();
   }
-  function wrapText(text,x,y,maxW,lineH,color,size,weight){
+  function wrapText(text,cx,cy,maxW,lh,color,size,weight){
     ctx.fillStyle=color;ctx.font=(weight||'400')+' '+(size||12)+'px Inter,Arial,sans-serif';
+    ctx.textAlign='center';
     var words=text.split(' '),line='',lines=[];
     words.forEach(function(w){
       var t=line?line+' '+w:w;
-      if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}
-      else line=t;
+      if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w;}else line=t;
     });
-    if(line)lines.push(line);
-    lines=lines.slice(0,2);
-    var sy=y-((lines.length-1)*lineH)/2;
-    lines.forEach(function(l,k){ctx.fillText(l,x,sy+k*lineH);});
-    return lines.length;
+    if(line)lines.push(line);lines=lines.slice(0,2);
+    var sy=cy-((lines.length-1)*lh)/2;
+    lines.forEach(function(l,k){ctx.fillText(l,cx,sy+k*lh);});
   }
 
-  // === Desenhar swimlanes ===
-  if(hasSwimlanes){
-    laneOrder.forEach(function(r){
-      var lane=laneMap[r];
-      roundRect(10, lane.y, canvasW-20, lane.h, 8, C.swimBg, C.swimLine, 0.8);
-      ctx.fillStyle=C.sub;
-      ctx.font='500 11px Inter,Arial,sans-serif';
-      ctx.textAlign='left';
-      ctx.fillText('◈  '+r, 24, lane.y+20);
-    });
+  // === INÍCIO ===
+  var firstPos=positions[raiz];
+  if(firstPos){
+    roundRect(firstPos.cx-36,firstPos.y-gapY+8,72,26,13,C.start,null);
+    ctx.fillStyle='#fff';ctx.font='bold 11px Inter,Arial,sans-serif';ctx.textAlign='center';
+    ctx.fillText('INÍCIO',firstPos.cx,firstPos.y-gapY+24);
+    arrowLine(firstPos.cx,firstPos.y-gapY+34,firstPos.cx,firstPos.y-2,C.arrow,false);
   }
 
-  // === Início ===
-  var fp=positions[0];
-  var startCX=fp.cx, startY=fp.y-arrowGap;
-  roundRect(startCX-36,startY-20,72,26,13,C.start,null);
-  ctx.fillStyle='#fff';ctx.font='bold 11px Inter,Arial,sans-serif';ctx.textAlign='center';
-  ctx.fillText('INÍCIO',startCX,startY-4);
-  arrow(startCX,startY+6,startCX,fp.y-2,C.arrow,false);
+  // === Desenhar nós e setas DFS ===
+  visited={};
+  var fimPositions=[];  // posições onde precisamos desenhar FIM
 
-  // === Etapas ===
-  for(var i=0;i<etapas.length;i++){
-    var e=etapas[i], pos=positions[i];
-    var isDec=e.tipo==='decisao';
-    var slaRatio=slaMax>0&&(e.tmt||e.sla_min||0)>0?(e.tmt||e.sla_min||0)/slaMax:0;
-    var isCrit=slaRatio>0.8, isWarn=slaRatio>0.5&&!isCrit;
-    var fill=isDec?C.decFill:isCrit?C.critFill:isWarn?C.warnFill:C.boxFill;
-    var stroke=isDec?C.decStroke:isCrit?C.critStroke:isWarn?C.warnStroke:C.boxStroke;
-    var numBg=isDec?C.decStroke:isCrit?C.critStroke:isWarn?C.warnStroke:C.boxStroke;
+  function drawNode(id){
+    if(!id||id==='FIM'||visited[id])return;
+    visited[id]=true;
+    var no=nos[id];
+    if(!no)return;
+    var pos=positions[id];
+    if(!pos)return;
+    var isDec=no.tipo==='decisao';
 
     if(isDec){
-      diamond(pos.cx, pos.cy, decW, decH, fill, stroke);
+      diamond(pos.cx,pos.cy+4,boxW,decH,C.decFill,C.decStroke);
     } else {
-      roundRect(pos.x, pos.y, boxW, boxH, 8, fill, stroke, 1.5);
+      roundRect(pos.x,pos.y,boxW,boxH,8,C.boxFill,C.boxStroke,1.5);
     }
-
-    // Número
+    // Número badge
     ctx.beginPath();ctx.arc(pos.x+16,pos.y+14,11,0,Math.PI*2);
-    ctx.fillStyle=numBg;ctx.fill();
+    ctx.fillStyle=isDec?C.decStroke:C.boxStroke;ctx.fill();
     ctx.fillStyle='#fff';ctx.font='bold 10px Inter,Arial,sans-serif';ctx.textAlign='center';
-    ctx.fillText(i+1,pos.x+16,pos.y+18);
+    var nums=Object.keys(positions);
+    ctx.fillText(nums.indexOf(id)+1,pos.x+16,pos.y+18);
+    // Texto
+    wrapText(no.texto,pos.cx+4,pos.cy+(isDec?4:0)-6,boxW-50,14,C.text,12,'500');
+    // Sub
+    var sub=[no.responsavel,no.cargo,no.perfil].filter(Boolean).join(' / ');
+    if(no.sistema)sub+=(sub?' · ':'')+no.sistema;
+    if(no.tmt>0)sub+=(sub?' · ':'')+no.tmt+'min';
+    if(sub){ctx.fillStyle=C.sub;ctx.font='400 10px Inter,Arial,sans-serif';ctx.textAlign='center';
+      var subTxt=sub.length>32?sub.substring(0,30)+'…':sub;
+      ctx.fillText(subTxt,pos.cx,pos.y+boxH-8);}
 
-    // Texto principal
-    var textX=pos.cx+4, textY=pos.cy-6, maxTxtW=isDec?decW-50:boxW-50;
-    wrapText(e.texto||'(sem texto)',textX,textY,maxTxtW,14,C.text,12,'500');
-
-    // Sub: responsável + sistema + SLA
-    var sub='';
-    var respParts=[e.responsavel,e.cargo,e.perfil].filter(Boolean);
-    if(respParts.length) sub+=respParts.join(' / ');
-    if(e.sistema&&e.sistema.trim()) sub+=(sub?' · ':'')+e.sistema.trim();
-    var tmtV=e.tmt||e.sla_min||0;if(tmtV>0) sub+=(sub?' · ':'')+tmtV+'min'+(isCrit?' ⚠':'');
-    if(sub){
-      ctx.fillStyle=isCrit?C.critStroke:isWarn?C.warnStroke:C.sub;
-      ctx.font='400 10px Inter,Arial,sans-serif';ctx.textAlign='center';
-      ctx.fillText(sub.length>32?sub.substring(0,30)+'…':sub, pos.cx, pos.y+boxH-8);
-    }
-  }
-
-  // === Setas entre etapas ===
-  // Calcular posição do bloco FIM (após a última etapa)
-  var lastP=positions[etapas.length-1];
-  var fimCX=lastP.cx, fimY=lastP.y+boxH+16+26+4;
-
-  for(var i=0;i<etapas.length;i++){
-    var e=etapas[i], pos=positions[i];
-    var isDec=e.tipo==='decisao';
-
+    // Setas
     if(isDec){
-      // ---- SETA SIM (sai pela DIREITA do losango) ----
-      var simRaw=e.sim_goto;
-      var simIsFim=simRaw==='FIM';
-      var simDest=simRaw&&!simIsFim?simRaw-1:i+1;
-      if(simIsFim){
-        // SIM → FIM
-        arrowPath([
-          {x:pos.cx+decW/2,y:pos.cy},
-          {x:pos.cx+decW/2+36,y:pos.cy},
-          {x:pos.cx+decW/2+36,y:fimY-12},
-          {x:fimCX,y:fimY-12}
-        ],C.simColor,true);
-        ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-        ctx.fillText(e.sim_label||'Sim',pos.cx+decW/2+3,pos.cy-6);
-      } else if(simDest>=0&&simDest<etapas.length){
-        var sp=positions[simDest];
-        var isSimLoop=simDest<i;
-        if(isSimLoop){
-          // Loop para cima: curva pela lateral direita
-          var lrx=pos.cx+decW/2+30;
-          arrowPath([
-            {x:pos.cx+decW/2,y:pos.cy},
-            {x:lrx,y:pos.cy},
-            {x:lrx,y:sp.cy},
-            {x:sp.x+boxW,y:sp.cy}
-          ],C.simColor,true);
-          ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-          ctx.fillText(e.sim_label||'Sim',lrx+2,pos.cy-5);
-        } else {
-          // Para frente: sai pela direita
-          var toX=sp.x; var toY=sp.cy;
-          if(Math.floor(simDest/cols)===Math.floor(i/cols)){
-            // Mesma linha
-            arrow(pos.cx+decW/2+2,pos.cy,toX-2,toY,C.simColor,false);
-          } else {
-            // Linha diferente
-            var mx=pos.cx+decW/2+24;
-            arrowPath([{x:pos.cx+decW/2,y:pos.cy},{x:mx,y:pos.cy},{x:mx,y:sp.cy},{x:sp.x+boxW,y:sp.cy}],C.simColor,false);
-          }
-          ctx.fillStyle=C.simColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='center';
-          ctx.fillText(e.sim_label||'Sim',pos.cx+decW/2+16,pos.cy-7);
-        }
+      // SIM — sai pela esquerda do losango
+      var simId=no.sim_filho;
+      var slbl=no.sim_label||'Sim';
+      if(simId==='FIM'){
+        var fy=pos.cy+4+decH/2+10;
+        fimPositions.push({cx:pos.cx-boxW/2-30,cy:fy+20,label:slbl,color:C.sim});
+        arrowPath([{x:pos.cx-boxW/2,y:pos.cy+4},{x:pos.cx-boxW/2-30,y:pos.cy+4},{x:pos.cx-boxW/2-30,y:fy+8}],C.sim,false);
+        ctx.fillStyle=C.sim;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
+        ctx.fillText(slbl,pos.cx-boxW/2-3,pos.cy+4-5);
+      } else if(simId&&positions[simId]){
+        var sp=positions[simId];
+        arrowPath([{x:pos.cx-boxW/2,y:pos.cy+4},{x:sp.cx,y:pos.cy+4},{x:sp.cx,y:sp.y}],C.sim,false);
+        ctx.fillStyle=C.sim;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
+        ctx.fillText(slbl,pos.cx-boxW/2-3,pos.cy+4-5);
       }
-
-      // ---- SETA NÃO (sai por BAIXO do losango) ----
-      var naoRaw=e.nao_goto;
-      var naoIsFim=naoRaw==='FIM';
-      var naoDest=naoRaw&&!naoIsFim?naoRaw-1:i+1;
-      if(naoIsFim){
-        // NÃO → FIM: sai por baixo e vai para FIM
-        arrowPath([
-          {x:pos.cx,y:pos.cy+decH/2},
-          {x:pos.cx,y:pos.cy+decH/2+20},
-          {x:fimCX,y:pos.cy+decH/2+20},
-          {x:fimCX,y:fimY-12}
-        ],C.naoColor,true);
-        ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-        ctx.fillText(e.nao_label||'Não',pos.cx+4,pos.cy+decH/2+16);
-      } else if(naoDest>=0&&naoDest<etapas.length){
-        var np=positions[naoDest];
-        var isNaoLoop=naoDest<i;
-        var sameDest=naoDest===simDest&&!simIsFim&&!naoIsFim;
-        if(isNaoLoop){
-          // Volta para etapa anterior: curva pela lateral esquerda
-          var llx=pos.cx-decW/2-26;
-          arrowPath([
-            {x:pos.cx-decW/2,y:pos.cy},
-            {x:llx,y:pos.cy},
-            {x:llx,y:np.cy},
-            {x:np.x,y:np.cy}
-          ],C.naoColor,true);
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='right';
-          ctx.fillText(e.nao_label||'Não',llx-2,pos.cy-5);
-        } else if(sameDest){
-          // SIM e NÃO vão para o mesmo lugar: NÃO sai por baixo
-          // SIM já foi desenhado pela direita
-          // NÃO sai por baixo e converge no mesmo ponto sem cruzar
-          var bY=pos.cy+decH/2+2;
-          arrowPath([
-            {x:pos.cx,y:bY},
-            {x:pos.cx,y:np.y-2}
-          ],C.naoColor,false);
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-          ctx.fillText(e.nao_label||'Não',pos.cx+4,bY+14);
-        } else {
-          // Destino diferente: sai por baixo
-          if(naoDest===i+1){
-            arrow(pos.cx,pos.cy+decH/2+2,np.cx,np.y-2,C.naoColor,false);
-          } else {
-            var bY2=pos.cy+decH/2+2;
-            arrowPath([
-              {x:pos.cx,y:bY2},
-              {x:pos.cx,y:bY2+20},
-              {x:np.cx,y:bY2+20},
-              {x:np.cx,y:np.y}
-            ],C.naoColor,false);
-          }
-          ctx.fillStyle=C.naoColor;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-          ctx.fillText(e.nao_label||'Não',pos.cx+4,pos.cy+decH/2+16);
-        }
+      // NÃO — sai pela direita do losango
+      var naoId=no.nao_filho;
+      var nlbl=no.nao_label||'Não';
+      if(naoId==='FIM'){
+        var fy2=pos.cy+4+decH/2+10;
+        fimPositions.push({cx:pos.cx+boxW/2+30,cy:fy2+20,label:nlbl,color:C.nao});
+        arrowPath([{x:pos.cx+boxW/2,y:pos.cy+4},{x:pos.cx+boxW/2+30,y:pos.cy+4},{x:pos.cx+boxW/2+30,y:fy2+8}],C.nao,false);
+        ctx.fillStyle=C.nao;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+        ctx.fillText(nlbl,pos.cx+boxW/2+3,pos.cy+4-5);
+      } else if(naoId&&positions[naoId]){
+        var np=positions[naoId];
+        arrowPath([{x:pos.cx+boxW/2,y:pos.cy+4},{x:np.cx,y:pos.cy+4},{x:np.cx,y:np.y}],C.nao,false);
+        ctx.fillStyle=C.nao;ctx.font='500 10px Inter,Arial,sans-serif';ctx.textAlign='left';
+        ctx.fillText(nlbl,pos.cx+boxW/2+3,pos.cy+4-5);
       }
-
+      // Recursão
+      if(simId&&simId!=='FIM')drawNode(simId);
+      if(naoId&&naoId!=='FIM')drawNode(naoId);
     } else {
-      // Etapa sequencial → próxima
-      if(i<etapas.length-1){
-        var next=i+1;
-        var cp=positions[i], np2=positions[next];
-        var sameRow=Math.floor(i/cols)===Math.floor(next/cols);
-        var currRow=Math.floor(i/cols);
-        var dirLtoR2=currRow%2===0;
-        if(sameRow){
-          var fromX=dirLtoR2?cp.x+boxW+2:cp.x-2;
-          var toX2=dirLtoR2?np2.x-2:np2.x+boxW+2;
-          arrow(fromX,cp.cy,toX2,np2.cy,C.arrow,false);
-        } else {
-          var midY=cp.y+boxH+arrowGap*0.5;
-          arrowPath([
-            {x:cp.cx,y:cp.y+boxH},
-            {x:cp.cx,y:midY},
-            {x:np2.cx,y:midY},
-            {x:np2.cx,y:np2.y}
-          ],C.arrow,false);
-        }
+      // Próxima
+      var nxtId=no.proximo;
+      if(nxtId==='FIM'){
+        var fy3=pos.y+boxH+gapY/2;
+        fimPositions.push({cx:pos.cx,cy:fy3+20,label:'',color:C.end});
+        arrowLine(pos.cx,pos.y+boxH,pos.cx,fy3+8,C.arrow,false);
+      } else if(nxtId&&positions[nxtId]){
+        var nxp=positions[nxtId];
+        arrowLine(pos.cx,pos.y+boxH+2,nxp.cx,nxp.y-2,C.arrow,false);
       }
+      if(nxtId&&nxtId!=='FIM')drawNode(nxtId);
     }
   }
-// === FIM ===
-  var lastPos=positions[etapas.length-1];
-  var endCX=lastPos.cx, endY=lastPos.y+boxH+16;
-  arrow(endCX,lastPos.y+boxH,endCX,endY,C.arrow,false);
-  roundRect(endCX-32,endY,64,26,13,C.end,null);
-  ctx.fillStyle='#fff';ctx.font='bold 11px Inter,Arial,sans-serif';ctx.textAlign='center';
-  ctx.fillText('FIM',endCX,endY+17);
 
-  // === Legenda SLA ===
-  if(slaMax>0){
-    var ly=canvas.height-30;
-    roundRect(20,ly-4,canvas.width-40,26,6,'rgba(0,0,0,0.03)',C.swimLine,0.5);
-    ctx.font='400 10px Inter,Arial,sans-serif';ctx.textAlign='left';
-    roundRect(28,ly+4,10,10,3,C.warnFill,C.warnStroke,1);
-    ctx.fillStyle=C.sub;ctx.fillText('SLA médio',42,ly+13);
-    roundRect(120,ly+4,10,10,3,C.critFill,C.critStroke,1);
-    ctx.fillStyle=C.sub;ctx.fillText('SLA alto (gargalo)',134,ly+13);
-    ctx.textAlign='right';
-    ctx.fillStyle=C.sub;ctx.fillText('SLA: tempo em minutos por etapa',canvas.width-28,ly+13);
+  visited={};
+  drawNode(raiz);
+
+  // Desenhar blocos FIM
+  fimPositions.forEach(function(f){
+    roundRect(f.cx-32,f.cy,64,26,13,f.color,null);
+    ctx.fillStyle='#fff';ctx.font='bold 11px Inter,Arial,sans-serif';ctx.textAlign='center';
+    ctx.fillText('FIM',f.cx,f.cy+17);
+    // Atualizar maxY
+    if(f.cy+26>maxY)maxY=f.cy+26;
+  });
+
+  // Se não há FIM explícito, desenhar no fim do caminho principal
+  if(fimPositions.length===0){
+    var lastId=Object.keys(positions)[Object.keys(positions).length-1];
+    if(lastId&&positions[lastId]){
+      var lp=positions[lastId];
+      arrowLine(lp.cx,lp.y+boxH,lp.cx,lp.y+boxH+16,C.arrow,false);
+      roundRect(lp.cx-32,lp.y+boxH+16,64,26,13,C.end,null);
+      ctx.fillStyle='#fff';ctx.font='bold 11px Inter,Arial,sans-serif';ctx.textAlign='center';
+      ctx.fillText('FIM',lp.cx,lp.y+boxH+33);
+    }
   }
 }
 
-function exportarFluxograma() {
-  var canvas = document.getElementById('fluxograma-canvas');
-  var nome = (WIZ.nome || 'fluxograma').replace(/[^a-zA-Z0-9]/g, '_');
-  var a = document.createElement('a');
-  a.download = 'fluxo_as_is_' + nome + '.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
+function exportarFluxograma(){
+  var canvas=document.getElementById('fluxograma-canvas');
+  var nome=(WIZ.nome||'fluxograma').replace(/[^a-zA-Z0-9]/g,'_');
+  var a=document.createElement('a');a.download='fluxo_as_is_'+nome+'.png';
+  a.href=canvas.toDataURL('image/png');a.click();
 }
-
 
 /* ===== INIT ===== */
 ldDB();renderHome();rSels();
