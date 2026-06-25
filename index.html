@@ -387,6 +387,13 @@ textarea{resize:vertical;min-height:60px}
 </div>
 
 
+
+<div id="sb-loading" style="display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:12px;backdrop-filter:blur(2px)">
+  <div style="width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#0a3d6b;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div style="font-size:13px;font-weight:500;color:#0a3d6b">Conectando ao banco...</div>
+</div>
+<div id="sb-error" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#fee2e2;color:#991b1b;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:998;border:1px solid #fca5a5"></div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 </div><!-- /app -->
 
 <!-- MODALS -->
@@ -423,8 +430,8 @@ textarea{resize:vertical;min-height:60px}
 var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]}};
 var WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:null,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
 var M3DET=null;
-function ldDB(){try{var s=localStorage.getItem('callink_v1');if(s)DB=JSON.parse(s);}catch(e){}}
-function svDB(){try{localStorage.setItem('callink_v1',JSON.stringify(DB));}catch(e){}}
+
+
 function cm(id){document.getElementById(id).classList.remove('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
 
@@ -475,7 +482,7 @@ function renderHome(){
 }
 
 /* ===== M1 ===== */
-function salvarM1Proj(){var n=document.getElementById('m1pn-nome').value.trim();if(!n){alert('Informe o nome.');return;}DB.m1.projetos.push({id:Date.now(),nome:n,cliente:document.getElementById('m1pn-cli').value.trim(),an:document.getElementById('m1pn-an').value.trim(),desc:document.getElementById('m1pn-desc').value.trim(),data:new Date().toLocaleDateString('pt-BR')});svDB();cm('modal-m1-proj');renderM1Proj();rSels();}
+
 function renderM1Proj(){var el=document.getElementById('m1-proj-list');if(!DB.m1.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto. Crie o primeiro.</p></div>';return;}el.innerHTML=DB.m1.projetos.map(function(p){var cnt=DB.m1.processos.filter(function(x){return x.projetoId===p.id}).length;return '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:14px;font-weight:700">'+p.nome+'</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">'+(p.cliente||'')+(p.an?' · AN: '+p.an:'')+(p.data?' · '+p.data:'')+'</div><div style="margin-top:6px"><span class="badge b-navy">'+cnt+' processo(s)</span></div></div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="goWizProj('+p.id+')"><i class="ti ti-plus"></i> Entrevista</button><button class="btn sm danger" onclick="delM1Proj('+p.id+')"><i class="ti ti-trash"></i></button></div></div>';}).join('');}
 function goWizProj(id){
   WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:id,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
@@ -490,9 +497,9 @@ function goWizProj(id){
   if(t)t.textContent='Nova entrevista'+(proj?' — '+proj.nome:'');
   if(s)s.textContent='Roteiro guiado — preencha durante ou após a entrevista';
 }
-function delM1Proj(id){if(!confirm('Excluir projeto e processos?'))return;DB.m1.projetos=DB.m1.projetos.filter(function(p){return p.id!==id});DB.m1.processos=DB.m1.processos.filter(function(p){return p.projetoId!==id});svDB();renderM1Proj();rSels();}
+
 function renderM1Proc(){var sel=document.getElementById('m1p-proj').value;var list=DB.m1.processos;if(sel)list=list.filter(function(p){return String(p.projetoId)===sel});var el=document.getElementById('m1-proc-list');if(!list.length){el.innerHTML='<div class="empty-state"><i class="ti ti-sitemap"></i><p>Nenhum processo mapeado.</p></div>';return;}var sc=function(s){return s>=75?'sem-v':s>=50?'sem-a':s>0?'sem-r':'sem-c';};el.innerHTML='<div class="card">'+list.map(function(p){var proj=DB.m1.projetos.find(function(x){return x.id===p.projetoId});return '<div class="proc-row"><div class="sem '+sc(p.score)+'"></div><span style="flex:1;font-size:13px;font-weight:500">'+p.nome+(proj?' <span style="font-size:11px;color:var(--text-secondary);font-weight:400">('+proj.nome+')</span>':'')+'</span><span style="font-size:12px;color:var(--text-secondary);margin-right:8px">'+p.score+'%</span><div style="min-width:90px"><div class="pb-bg"><div class="pb-fill" style="width:'+p.score+'%;background:'+semColor(p.score>=75?'v':p.score>=50?'a':'r')+'"></div></div></div><button class="btn sm" style="margin-left:8px" onclick="editProcesso('+p.id+')" title="Editar processo"><i class="ti ti-edit"></i></button><button class="btn sm danger" style="margin-left:4px" onclick="delM1Proc('+p.id+')"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}
-function delM1Proc(id){if(!confirm('Excluir?'))return;DB.m1.processos=DB.m1.processos.filter(function(p){return p.id!==id});svDB();renderM1Proc();}
+
 
 function nav(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
@@ -508,7 +515,7 @@ function nav(id){
   rSels();
 }
 function expAll(){dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),'callink_smn_backup_'+new Date().toISOString().substring(0,10)+'.json');}
-function importAll(evt){var f=evt.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{DB=JSON.parse(e.target.result);svDB();renderHome();rSels();alert('Dados importados com sucesso!');}catch(e){alert('Arquivo inválido.');}};r.readAsText(f);}
+
 
 /* ===== WIZARD ===== */
 
@@ -1014,31 +1021,7 @@ function calcScore(d){
   return p;
 }
 
-function wizSave(){
-  wizSave2Step();
-  if(!WIZ.projetoId||!WIZ.nome){alert('Preencha projeto e nome (aba Identificação).');WIZ.step=0;rWizStep();return;}
-  WIZ.score=calcScore(WIZ);
-  WIZ.oportunidades=WIZ.oportunidades.map(function(o){o.classificacao=classify(o);return o;});
-  var isEdit=!!WIZ._editId;
-  if(isEdit){
-    var idx=DB.m1.processos.findIndex(function(p){return p.id===WIZ._editId;});
-    if(idx>=0){DB.m1.processos[idx]=JSON.parse(JSON.stringify(WIZ));DB.m1.processos[idx].id=WIZ._editId;}
-  } else {
-    WIZ.id=Date.now();
-    DB.m1.processos.push(JSON.parse(JSON.stringify(WIZ)));
-  }
-  WIZ.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim();}).forEach(function(o){
-    if(!DB.m3.ops.some(function(x){return x.titulo.toLowerCase()===o.titulo.trim().toLowerCase();}))
-      DB.m3.ops.push({id:Date.now()+Math.random(),titulo:o.titulo.trim(),tipo:o.tipo||'automacao',esforco:o.esforco||'medio',impacto:o.impacto||'alto',status:'ideia',responsavel:'',origem:WIZ.nome||'',descricao:o.descricao||'',classificacao:o.classificacao,progresso:0});
-  });
-  WIZ.sistemas.filter(function(s){return s.nome&&s.nome.trim();}).forEach(function(s){
-    if(!DB.m2.sistemas.some(function(x){return x.nome.toLowerCase()===s.nome.trim().toLowerCase();}))
-      DB.m2.sistemas.push({id:Date.now()+Math.random(),nome:s.nome.trim(),categoria:'outro',criticidade:'media',finalidade:s.funcao||'',operacoes:WIZ.nome||''});
-  });
-  svDB();
-  alert(isEdit?'Processo atualizado! Score: '+WIZ.score+'%':'Processo salvo! Score: '+WIZ.score+'%');
-  nav('m1-proc');
-}
+
 
 
 function editProcesso(id){
@@ -1065,50 +1048,50 @@ function editProcesso(id){
 }
 
 /* ===== M2 ===== */
-function salvarM2Sys(){var n=document.getElementById('m2sn-nome').value.trim();if(!n){alert('Informe o nome.');return;}DB.m2.sistemas.push({id:Date.now()+Math.random(),nome:n,categoria:document.getElementById('m2sn-cat').value,criticidade:document.getElementById('m2sn-crit').value,finalidade:document.getElementById('m2sn-fin').value.trim(),operacoes:document.getElementById('m2sn-ops').value.trim()});svDB();cm('modal-m2-sys');renderM2Inv();}
+
 function importM1toM2(){var imp=0,ex=DB.m2.sistemas.map(function(s){return s.nome.toLowerCase()});DB.m1.processos.forEach(function(p){(p.sistemas||[]).forEach(function(s){if(!s.nome||!s.nome.trim()||ex.includes(s.nome.toLowerCase()))return;DB.m2.sistemas.push({id:Date.now()+Math.random(),nome:s.nome.trim(),categoria:'outro',criticidade:'media',finalidade:s.funcao||'',operacoes:p.nome||''});ex.push(s.nome.toLowerCase());imp++;});});svDB();renderM2Inv();alert(imp+' sistema(s) importados do M1.');}
 function renderM2Inv(){var q=(document.getElementById('m2-srch').value||'').toLowerCase(),cat=document.getElementById('m2-cat').value;var list=DB.m2.sistemas.filter(function(s){return(!q||(s.nome.toLowerCase().includes(q)||(s.finalidade||'').toLowerCase().includes(q)))&&(!cat||s.categoria===cat);});var el=document.getElementById('m2-inv-list');if(!list.length){el.innerHTML='<div class="empty-state"><i class="ti ti-server-off"></i><p>Nenhum sistema cadastrado.</p></div>';return;}el.innerHTML='<div class="card">'+list.map(function(s){var bc=s.criticidade==='alta'?'border-left:3px solid var(--red)':s.criticidade==='media'?'border-left:3px solid var(--amber)':'border-left:3px solid var(--green)';return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0 9px 12px;border-bottom:1px solid var(--border-light);'+bc+'"><div style="flex:1"><div style="font-size:13px;font-weight:600">'+s.nome+'</div>'+(s.finalidade?'<div style="font-size:11.5px;color:var(--text-secondary)">'+s.finalidade.substring(0,60)+'</div>':'')+'</div><span class="badge '+(catC[s.categoria]||'b-gray')+'" style="font-size:10px">'+(catL[s.categoria]||'Outro')+'</span><span class="badge '+critC[s.criticidade]+'" style="font-size:10px">'+s.criticidade+'</span><button class="btn sm danger" onclick="delM2Sys(\''+s.id+'\')"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}
-function delM2Sys(id){if(!confirm('Excluir?'))return;DB.m2.sistemas=DB.m2.sistemas.filter(function(s){return String(s.id)!==String(id)});svDB();renderM2Inv();}
+
 function prepInteg(){var opts='<option value="">Selecione...</option>'+DB.m2.sistemas.map(function(s){return '<option value="'+s.id+'">'+s.nome+'</option>'}).join('');document.getElementById('m2in-orig').innerHTML=opts;document.getElementById('m2in-dest').innerHTML=opts;document.getElementById('m2in-desc').value='';document.getElementById('m2in-op').value='';openModal('modal-m2-integ');}
-function salvarM2Integ(){var o=document.getElementById('m2in-orig').value,d=document.getElementById('m2in-dest').value;if(!o||!d){alert('Selecione origem e destino.');return;}if(o===d){alert('Origem = destino.');return;}DB.m2.integracoes.push({id:Date.now(),origemId:parseInt(o),destinoId:parseInt(d),tipo:document.getElementById('m2in-tipo').value,descricao:document.getElementById('m2in-desc').value.trim(),operacao:document.getElementById('m2in-op').value.trim()});svDB();cm('modal-m2-integ');renderM2Integ();}
+
 function renderM2Integ(){var el=document.getElementById('m2-integ-list');if(!DB.m2.integracoes.length){el.innerHTML='<div class="empty-state"><i class="ti ti-arrows-exchange"></i><p>Nenhuma integração mapeada.</p></div>';return;}el.innerHTML='<div class="card">'+DB.m2.integracoes.map(function(i){var o=DB.m2.sistemas.find(function(x){return x.id===i.origemId}),d=DB.m2.sistemas.find(function(x){return x.id===i.destinoId});return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border-light)"><div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:13px;font-weight:600">'+(o?o.nome:'?')+'</span><i class="ti ti-arrow-right" style="color:var(--text-tertiary)"></i><span style="font-size:13px;font-weight:600">'+(d?d.nome:'?')+'</span><span class="badge '+integC[i.tipo]+'" style="font-size:10px">'+integL[i.tipo]+'</span>'+(i.operacao?'<span style="font-size:11px;color:var(--text-secondary)">'+i.operacao+'</span>':'')+'</div><button class="btn sm danger" onclick="delM2Integ('+i.id+')"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}
-function delM2Integ(id){if(!confirm('Excluir?'))return;DB.m2.integracoes=DB.m2.integracoes.filter(function(i){return i.id!==id});svDB();renderM2Integ();}
+
 
 /* ===== M3 ===== */
-function salvarM3Op(){var t=document.getElementById('m3on-tit').value.trim();if(!t){alert('Informe o título.');return;}var o={id:Date.now(),titulo:t,tipo:document.getElementById('m3on-tipo').value,esforco:document.getElementById('m3on-esf').value,impacto:document.getElementById('m3on-imp').value,status:'ideia',responsavel:document.getElementById('m3on-resp').value.trim(),origem:document.getElementById('m3on-orig').value.trim(),descricao:document.getElementById('m3on-desc').value.trim(),progresso:0};o.classificacao=classify(o);DB.m3.ops.push(o);svDB();cm('modal-m3-op');renderM3Lista();}
+
 function importM1toM3(){var imp=0,ex=DB.m3.ops.map(function(o){return o.titulo.toLowerCase()});DB.m1.processos.forEach(function(p){(p.oportunidades||[]).forEach(function(o){if(!o.titulo||!o.titulo.trim()||ex.includes(o.titulo.toLowerCase()))return;DB.m3.ops.push({id:Date.now()+Math.random(),titulo:o.titulo.trim(),tipo:o.tipo||'automacao',esforco:o.esforco||'medio',impacto:o.impacto||'alto',status:'ideia',responsavel:'',origem:p.nome||'',descricao:o.descricao||'',classificacao:o.classificacao||classify(o),progresso:0});ex.push(o.titulo.toLowerCase());imp++;});});svDB();renderM3Lista();alert(imp+' oportunidade(s) importadas.');}
 function renderM3Lista(){var q=(document.getElementById('m3-srch').value||'').toLowerCase(),st=document.getElementById('m3-st').value,cl=document.getElementById('m3-cl').value;var list=DB.m3.ops.filter(function(o){return(!q||(o.titulo.toLowerCase().includes(q)||(o.descricao||'').toLowerCase().includes(q)))&&(!st||o.status===st)&&(!cl||o.classificacao===cl);});var el=document.getElementById('m3-lista-content');if(!list.length){el.innerHTML='<div class="empty-state"><i class="ti ti-bulb-off"></i><p>Nenhuma oportunidade.</p></div>';return;}el.innerHTML=list.map(function(o){var p=Math.min(100,Math.max(0,o.progresso||0));return '<div class="op-card" onclick="openM3Det('+o.id+')"><div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:7px"><div style="flex:1"><div style="font-size:13.5px;font-weight:700">'+o.titulo+'</div>'+(o.origem?'<div style="font-size:11.5px;color:var(--text-secondary);margin-top:1px"><i class="ti ti-map-pin" style="font-size:11px"></i> '+o.origem+'</div>':'')+'</div><div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+clC[o.classificacao]+'">'+clL[o.classificacao]+'</span><span class="badge '+stC[o.status]+'">'+stL[o.status]+'</span><span class="badge '+tipoC[o.tipo]+'">'+tipoL[o.tipo]+'</span></div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--text-secondary)">Esforço: '+o.esforco+' · Impacto: '+o.impacto+'</span><div class="pb-bg" style="flex:1"><div class="pb-fill" style="width:'+p+'%;background:var(--green)"></div></div><span style="font-size:11px;color:var(--text-secondary);min-width:28px;text-align:right">'+p+'%</span></div></div>';}).join('');}
 function openM3Det(id){var o=DB.m3.ops.find(function(x){return x.id===id});if(!o)return;M3DET=o;document.getElementById('m3det-title').textContent=o.titulo;document.getElementById('m3det-body').innerHTML='<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px"><span class="badge '+clC[o.classificacao]+'">'+clL[o.classificacao]+'</span><span class="badge '+stC[o.status]+'">'+stL[o.status]+'</span><span class="badge '+tipoC[o.tipo]+'">'+tipoL[o.tipo]+'</span></div><table style="width:100%;font-size:12.5px;border-collapse:collapse;margin-bottom:12px"><tr><td style="color:var(--text-secondary);padding:5px 0;width:90px">Esforço</td><td>'+o.esforco+'</td><td style="color:var(--text-secondary);padding:5px 0;width:90px">Impacto</td><td>'+o.impacto+'</td></tr><tr><td style="color:var(--text-secondary);padding:5px 0">Responsável</td><td colspan="3">'+(o.responsavel||'—')+'</td></tr><tr><td style="color:var(--text-secondary);padding:5px 0">Origem</td><td colspan="3">'+(o.origem||'—')+'</td></tr></table>'+(o.descricao?'<p style="font-size:13px;margin-bottom:10px;line-height:1.5">'+o.descricao+'</p>':'')+'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:12px;color:var(--text-secondary);min-width:70px">Progresso</span><div class="pb-bg" style="flex:1"><div class="pb-fill" style="width:'+Math.min(100,o.progresso||0)+'%;background:var(--green)"></div></div><span style="font-size:12px;font-weight:600">'+(o.progresso||0)+'%</span></div><div><label class="form-label">Atualizar progresso (%)</label><input type="number" id="m3det-prog" value="'+(o.progresso||0)+'" min="0" max="100" style="width:120px"></div>';document.getElementById('m3det-del').onclick=function(){if(confirm('Excluir?')){DB.m3.ops=DB.m3.ops.filter(function(x){return x.id!==id});svDB();cm('modal-m3-det');renderM3Lista();renderHome();}};openModal('modal-m3-det');}
 var M3NS={ideia:'analise',analise:'execucao',execucao:'concluido',concluido:'concluido'};
-function avancarM3(){if(!M3DET)return;var o=DB.m3.ops.find(function(x){return x.id===M3DET.id});if(!o)return;o.status=M3NS[o.status]||o.status;var p=document.getElementById('m3det-prog');if(p)o.progresso=parseInt(p.value)||o.progresso||0;svDB();cm('modal-m3-det');renderM3Lista();renderHome();}
+
 function renderM3Matriz(){var cm2={alto_baixo:[],alto_medio:[],alto_alto:[],medio_baixo:[],medio_medio:[],medio_alto:[],baixo_baixo:[],baixo_medio:[],baixo_alto:[]};DB.m3.ops.forEach(function(o){var k=o.impacto+'_'+o.esforco;if(cm2[k])cm2[k].push(o);});var imp=['alto','medio','baixo'],esf=['baixo','medio','alto'];var cb={alto_baixo:'#dcfce7',alto_medio:'#dbeafe',alto_alto:'#dbeafe',medio_baixo:'#dcfce7',medio_medio:'#f3f4f6',medio_alto:'#f3f4f6',baixo_baixo:'#f3f4f6',baixo_medio:'#fee2e2',baixo_alto:'#fee2e2'};var ch={alto_baixo:{bg:'#dcfce7',c:'#166534'},alto_medio:{bg:'#dbeafe',c:'#1d4ed8'},alto_alto:{bg:'#dbeafe',c:'#1d4ed8'},medio_baixo:{bg:'#dcfce7',c:'#166534'},medio_medio:{bg:'#f3f4f6',c:'#374151'},medio_alto:{bg:'#f3f4f6',c:'#374151'},baixo_baixo:{bg:'#f3f4f6',c:'#374151'},baixo_medio:{bg:'#fee2e2',c:'#991b1b'},baixo_alto:{bg:'#fee2e2',c:'#991b1b'}};var el=document.getElementById('m3-matriz-grid');var html='<div></div><div style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary);font-weight:600">Esforço baixo</div><div style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary);font-weight:600">Esforço médio</div><div style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary);font-weight:600">Esforço alto</div>';imp.forEach(function(im){html+='<div style="display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-tertiary);font-weight:600;writing-mode:vertical-lr;transform:rotate(180deg)">Impacto '+im+'</div>';esf.forEach(function(es){var k=im+'_'+es,c=ch[k]||{bg:'#f3f4f6',c:'#374151'};html+='<div class="matriz-cell" style="background:'+cb[k]+'">'+(cm2[k]||[]).map(function(o){return '<div class="matriz-chip" style="background:'+c.bg+';color:'+c.c+'" onclick="openM3Det('+o.id+')" title="'+o.titulo+'">'+o.titulo.substring(0,18)+(o.titulo.length>18?'…':'')+'</div>';}).join('')+'</div>';});});el.innerHTML=html;}
 function renderM3Kanban(){var cols=['ideia','analise','execucao','concluido'],cc={ideia:'#888780',analise:'#3b82f6',execucao:'#EF9F27',concluido:'#1D9E75'};var el=document.getElementById('m3-kanban-board');el.innerHTML=cols.map(function(st){var items=DB.m3.ops.filter(function(o){return o.status===st});return '<div class="kanban-col"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:12px;font-weight:700">'+stL[st]+'</span><span style="background:'+cc[st]+';color:#fff;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:600">'+items.length+'</span></div>'+items.map(function(o){return '<div class="kanban-card" onclick="openM3Det('+o.id+')"><div style="font-weight:600;margin-bottom:4px;line-height:1.3;font-size:12.5px">'+o.titulo+'</div><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="badge '+clC[o.classificacao]+'" style="font-size:9px">'+clL[o.classificacao]+'</span><span class="badge '+tipoC[o.tipo]+'" style="font-size:9px">'+tipoL[o.tipo]+'</span></div>'+(o.responsavel?'<div style="font-size:11px;color:var(--text-tertiary);margin-top:4px"><i class="ti ti-user" style="font-size:11px"></i> '+o.responsavel+'</div>':'')+'</div>';}).join('')+'</div>';}).join('');}
 
 /* ===== M4 ===== */
 var TRILHAS={atendimento:[{secao:'Infraestrutura e TI',desc:'Estações de trabalho entregues e configuradas',prio:'critico'},{secao:'Infraestrutura e TI',desc:'Headsets testados e homologados',prio:'critico'},{secao:'Infraestrutura e TI',desc:'Internet com redundância ativa',prio:'critico'},{secao:'Telefonia e sistemas',desc:'Ramal/softphone configurado por agente',prio:'critico'},{secao:'Telefonia e sistemas',desc:'URA publicada e testada',prio:'critico'},{secao:'Telefonia e sistemas',desc:'CRM acessível por todos os agentes',prio:'critico'},{secao:'Telefonia e sistemas',desc:'Sistemas do cliente com acesso concedido',prio:'critico'},{secao:'Telefonia e sistemas',desc:'Whitelist de acessos liberada no firewall',prio:'critico'},{secao:'Telefonia e sistemas',desc:'Gravação de chamadas ativa',prio:'importante'},{secao:'RH e equipe',desc:'Headcount contratado e admitido',prio:'critico'},{secao:'RH e equipe',desc:'Supervisor / coordenador designado',prio:'critico'},{secao:'RH e equipe',desc:'Escala de trabalho publicada',prio:'importante'},{secao:'Treinamento',desc:'Material de treinamento recebido do cliente',prio:'critico'},{secao:'Treinamento',desc:'Treinamento inicial concluído (produto/serviço)',prio:'critico'},{secao:'Treinamento',desc:'Treinamento de sistema concluído',prio:'critico'},{secao:'Treinamento',desc:'Simulação / roleplay realizado',prio:'importante'},{secao:'Qualidade e processos',desc:'Script de atendimento aprovado pelo cliente',prio:'critico'},{secao:'Qualidade e processos',desc:'Procedimento de escalonamento definido',prio:'critico'},{secao:'Qualidade e processos',desc:'Formulário de monitoria configurado',prio:'importante'},{secao:'Contrato e compliance',desc:'Contrato / SOW assinado',prio:'critico'},{secao:'Contrato e compliance',desc:'SLAs e KPIs definidos e documentados',prio:'critico'},{secao:'Contrato e compliance',desc:'LGPD / confidencialidade assinados',prio:'critico'},{secao:'Go-live',desc:'Teste piloto realizado (shadow / nesting)',prio:'critico'},{secao:'Go-live',desc:'War room definido para os primeiros dias',prio:'importante'},{secao:'Go-live',desc:'Ponto focal do cliente confirmado',prio:'critico'},{secao:'Go-live',desc:'Relatório diário D+1 configurado',prio:'importante'}],backoffice:[{secao:'Infraestrutura e TI',desc:'Estações configuradas',prio:'critico'},{secao:'Infraestrutura e TI',desc:'VPN ativa e testada',prio:'critico'},{secao:'Sistemas e acessos',desc:'Perfis de acesso criados em todos os sistemas',prio:'critico'},{secao:'Sistemas e acessos',desc:'Fluxo de trabalho/fila configurado',prio:'critico'},{secao:'Sistemas e acessos',desc:'Templates e formulários disponíveis',prio:'importante'},{secao:'Sistemas e acessos',desc:'Regras de negócio documentadas no sistema',prio:'critico'},{secao:'RH e equipe',desc:'Analistas contratados e admitidos',prio:'critico'},{secao:'RH e equipe',desc:'Coordenador de backoffice designado',prio:'critico'},{secao:'Treinamento',desc:'Procedimento operacional padrão (POP) entregue',prio:'critico'},{secao:'Treinamento',desc:'Treinamento de sistema realizado',prio:'critico'},{secao:'Treinamento',desc:'Treinamento de produto/regras de negócio',prio:'critico'},{secao:'Qualidade e processos',desc:'SLA de processamento definido',prio:'critico'},{secao:'Qualidade e processos',desc:'Formulário de auditoria configurado',prio:'importante'},{secao:'Qualidade e processos',desc:'Processo de retrabalho/devolução definido',prio:'importante'},{secao:'Contrato e compliance',desc:'Contrato assinado com escopo de backoffice',prio:'critico'},{secao:'Contrato e compliance',desc:'KPIs de produtividade e qualidade definidos',prio:'critico'},{secao:'Contrato e compliance',desc:'LGPD assinada',prio:'critico'},{secao:'Go-live',desc:'Lote piloto processado e validado',prio:'critico'},{secao:'Go-live',desc:'Relatório diário configurado',prio:'importante'}]};
-function salvarM4Proj(){var n=document.getElementById('m4pn-nome').value.trim();if(!n){alert('Informe o nome.');return;}var t=document.getElementById('m4pn-trilha').value;var it=[];if(t&&TRILHAS[t])TRILHAS[t].forEach(function(x){it.push({id:Date.now()+Math.random(),secao:x.secao,desc:x.desc,prio:x.prio,status:'pendente',responsavel:'',prazo:'',obs:''});});DB.m4.projetos.push({id:Date.now(),nome:n,cliente:document.getElementById('m4pn-cli').value.trim(),gestor:document.getElementById('m4pn-gest').value.trim(),golive:document.getElementById('m4pn-gl').value.trim(),trilha:t,itens:it});svDB();cm('modal-m4-proj');renderM4Proj();rSels();}
+
 function renderM4Proj(){var el=document.getElementById('m4-proj-list');if(!DB.m4.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto.</p></div>';return;}el.innerHTML=DB.m4.projetos.map(function(p){var pr=calcPront(p),done=(p.itens||[]).filter(function(i){return i.status==='concluido'||i.status==='nao_aplicavel'}).length;return '<div class="card"><div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><div style="font-size:14px;font-weight:700">'+p.nome+(p.cliente?' <span style="font-size:12px;font-weight:400;color:var(--text-secondary)">— '+p.cliente+'</span>':'')+'</div>'+(p.golive?'<div style="font-size:12px;color:var(--text-secondary);margin-top:2px"><i class="ti ti-calendar" style="font-size:12px"></i> Go-live: '+p.golive+'</div>':'')+'<div class="progress-wrap"><div class="pb-bg" style="flex:1"><div class="pb-fill" style="width:'+pr+'%;background:'+pCol(pr)+'"></div></div><span style="font-size:12px;font-weight:700;color:'+pCol(pr)+'">'+pr+'%</span></div><div style="font-size:12px;color:var(--text-secondary);margin-top:3px">'+done+'/'+(p.itens||[]).length+' itens concluídos</div></div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="goM4CK('+p.id+')"><i class="ti ti-checklist"></i> Abrir</button><button class="btn sm danger" onclick="delM4Proj('+p.id+')"><i class="ti ti-trash"></i></button></div></div></div>';}).join('');}
 function goM4CK(id){document.getElementById('m4-ck-sel').value=String(id);nav('m4-ck');renderM4CK();}
-function delM4Proj(id){if(!confirm('Excluir?'))return;DB.m4.projetos=DB.m4.projetos.filter(function(p){return p.id!==id});svDB();renderM4Proj();rSels();}
-function salvarM4Item(){var pId=parseInt(document.getElementById('m4in-proj').value),p=DB.m4.projetos.find(function(x){return x.id===pId});if(!p){alert('Selecione o projeto.');return;}var desc=document.getElementById('m4in-desc').value.trim();if(!desc){alert('Informe a descrição.');return;}p.itens.push({id:Date.now()+Math.random(),secao:document.getElementById('m4in-sec').value.trim()||'Geral',desc:desc,prio:document.getElementById('m4in-prio').value,status:'pendente',responsavel:document.getElementById('m4in-resp').value.trim(),prazo:document.getElementById('m4in-prazo').value.trim(),obs:''});svDB();cm('modal-m4-item');renderM4CK();}
+
+
 function renderM4CK(){var id=parseInt(document.getElementById('m4-ck-sel').value),p=DB.m4.projetos.find(function(x){return x.id===id}),el=document.getElementById('m4-ck-content'),prEl=document.getElementById('m4-pront');if(!p){el.innerHTML='<div class="empty-state"><i class="ti ti-checklist"></i><p>Selecione um projeto acima.</p></div>';prEl.innerHTML='';return;}var pr=calcPront(p);prEl.innerHTML='<div class="card" style="display:flex;align-items:center;gap:14px"><div style="flex:1"><div style="font-size:12px;color:var(--text-secondary);margin-bottom:5px;font-weight:600">PRONTIDÃO DE GO-LIVE — '+p.nome.toUpperCase()+'</div><div style="display:flex;align-items:center;gap:10px"><div class="pb-bg" style="flex:1;height:10px"><div class="pb-fill" style="width:'+pr+'%;background:'+pCol(pr)+';height:10px"></div></div><span style="font-size:18px;font-weight:800;color:'+pCol(pr)+'">'+pr+'%</span></div></div>'+(p.golive?'<div style="text-align:right;border-left:1px solid var(--border-light);padding-left:14px"><div style="font-size:11px;color:var(--text-secondary);font-weight:600;text-transform:uppercase">Go-live</div><div style="font-size:16px;font-weight:700">'+p.golive+'</div></div>':'')+'</div>';var stF=document.getElementById('m4-st-f').value,itens=(p.itens||[]).filter(function(i){return !stF||i.status===stF;}),bySec={};itens.forEach(function(i){if(!bySec[i.secao])bySec[i.secao]=[];bySec[i.secao].push(i);});if(!itens.length){el.innerHTML='<div class="empty-state"><i class="ti ti-checklist"></i><p>Nenhum item com este filtro.</p></div>';return;}el.innerHTML=Object.keys(bySec).map(function(sec){var sit=bySec[sec],sd=sit.filter(function(i){return i.status==='concluido'||i.status==='nao_aplicavel'}).length;return '<div style="margin-bottom:12px"><div class="section-header"><i class="ti ti-chevron-down"></i><span style="flex:1">'+sec+'</span><span style="font-size:11px;color:var(--text-secondary)">'+sd+'/'+sit.length+' concluídos</span></div>'+sit.map(function(i){var ck=i.status==='concluido',bl=i.status==='bloqueado';return '<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border-light);border-radius:var(--radius-md);margin-bottom:5px;'+(bl?'border-left:3px solid var(--red)':ck?'opacity:.65':'')+'"><div class="ci-check'+(ck?' checked':'')+'" onclick="togM4('+p.id+','+i.id+')">'+(ck?'<i class="ti ti-check" style="font-size:12px;color:#fff"></i>':'')+'</div><div style="flex:1"><div style="font-size:13px;font-weight:500'+(ck?';text-decoration:line-through;color:var(--text-secondary)':'')+'">'+i.desc+'</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px"><span class="badge '+prioC[i.prio]+'" style="font-size:9.5px">'+prioL[i.prio]+'</span><span class="badge '+ckStC[i.status]+'" style="font-size:9.5px">'+ckStL[i.status]+'</span>'+(i.responsavel?'<span style="font-size:11px;color:var(--text-secondary)"><i class="ti ti-user" style="font-size:11px"></i> '+i.responsavel+'</span>':'')+(i.prazo?'<span style="font-size:11px;color:var(--text-secondary)"><i class="ti ti-calendar" style="font-size:11px"></i> '+i.prazo+'</span>':'')+'</div></div><button class="btn sm" onclick="openM4E('+p.id+','+i.id+')" style="flex-shrink:0"><i class="ti ti-edit"></i></button><button class="btn sm danger" onclick="delM4I('+p.id+','+i.id+')" style="flex-shrink:0"><i class="ti ti-trash"></i></button></div>';}).join('')+'</div>';}).join('');}
-function togM4(pId,iId){var p=DB.m4.projetos.find(function(x){return x.id===pId}),it=p&&p.itens.find(function(x){return x.id===iId});if(!it)return;it.status=it.status==='concluido'?'pendente':'concluido';svDB();renderM4CK();renderHome();}
+
 function openM4E(pId,iId){var p=DB.m4.projetos.find(function(x){return x.id===pId}),it=p&&p.itens.find(function(x){return x.id===iId});if(!it)return;document.getElementById('m4e-pid').value=pId;document.getElementById('m4e-iid').value=iId;document.getElementById('m4e-st').value=it.status;document.getElementById('m4e-resp').value=it.responsavel||'';document.getElementById('m4e-prazo').value=it.prazo||'';document.getElementById('m4e-obs').value=it.obs||'';openModal('modal-m4-edit');}
-function salvarM4Edit(){var pId=parseInt(document.getElementById('m4e-pid').value),iId=parseFloat(document.getElementById('m4e-iid').value),p=DB.m4.projetos.find(function(x){return x.id===pId}),it=p&&p.itens.find(function(x){return x.id===iId});if(!it)return;it.status=document.getElementById('m4e-st').value;it.responsavel=document.getElementById('m4e-resp').value.trim();it.prazo=document.getElementById('m4e-prazo').value.trim();it.obs=document.getElementById('m4e-obs').value.trim();svDB();cm('modal-m4-edit');renderM4CK();renderHome();}
-function delM4I(pId,iId){if(!confirm('Excluir?'))return;var p=DB.m4.projetos.find(function(x){return x.id===pId});if(!p)return;p.itens=p.itens.filter(function(x){return x.id!==iId});svDB();renderM4CK();}
+
+
 
 /* ===== M5 ===== */
 var KPI_P={atendimento:[{nome:'TMA',un:'min',meta:8,tol:10,dir:'menor_melhor'},{nome:'Nível de Serviço',sigla:'NS',un:'%',meta:95,tol:90,dir:'maior_melhor'},{nome:'CSAT',un:'pts',meta:4.5,tol:4,dir:'maior_melhor'},{nome:'FCR',un:'%',meta:80,tol:70,dir:'maior_melhor'},{nome:'Abandono',un:'%',meta:5,tol:8,dir:'menor_melhor'},{nome:'QA Monitoria',sigla:'QA',un:'%',meta:90,tol:80,dir:'maior_melhor'},{nome:'Absenteísmo',sigla:'ABS',un:'%',meta:3,tol:5,dir:'menor_melhor'}],backoffice:[{nome:'Produtividade',sigla:'PROD',un:'un',meta:100,tol:80,dir:'maior_melhor'},{nome:'Taxa de qualidade',un:'%',meta:98,tol:95,dir:'maior_melhor'},{nome:'SLA processamento',un:'%',meta:95,tol:90,dir:'maior_melhor'},{nome:'Retrabalho',un:'%',meta:2,tol:5,dir:'menor_melhor'},{nome:'Absenteísmo',sigla:'ABS',un:'%',meta:3,tol:5,dir:'menor_melhor'}]};
-function salvarM5Op(){var n=document.getElementById('m5on-nome').value.trim();if(!n){alert('Informe o nome.');return;}var op={id:Date.now(),nome:n,cliente:document.getElementById('m5on-cli').value.trim()};DB.m5.operacoes.push(op);var pad=document.getElementById('m5on-pad').value;if(pad&&KPI_P[pad])KPI_P[pad].forEach(function(k){DB.m5.kpis.push({id:Date.now()+Math.random(),opId:op.id,nome:k.nome,sigla:k.sigla||'',unidade:k.un,meta:k.meta,tol:k.tol,dir:k.dir});});svDB();cm('modal-m5-op');renderM5Dash();rSels();}
-function salvarM5KPI(){var opId=parseInt(document.getElementById('m5kn-op').value),n=document.getElementById('m5kn-nome').value.trim();if(!opId||!n){alert('Selecione operação e nome.');return;}DB.m5.kpis.push({id:Date.now()+Math.random(),opId:opId,nome:n,sigla:'',unidade:document.getElementById('m5kn-un').value,meta:parseFloat(document.getElementById('m5kn-meta').value)||0,tol:parseFloat(document.getElementById('m5kn-tol').value)||0,dir:document.getElementById('m5kn-dir').value});svDB();cm('modal-m5-kpi');renderM5Dash();}
+
+
 function loadKPIsLancar(){var opId=parseInt(document.getElementById('m5l-op').value),kpis=DB.m5.kpis.filter(function(k){return k.opId===opId}),el=document.getElementById('m5-lancar-kpis');if(!kpis.length){el.innerHTML='<p style="font-size:13px;color:var(--text-secondary)">Nenhum KPI nessa operação.</p>';return;}el.innerHTML='<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;padding:6px 0;font-size:11px;font-weight:700;color:var(--text-secondary);border-bottom:1px solid var(--border-light);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px"><span>Indicador</span><span>Meta</span><span>Último</span><span>Realizado *</span></div>'+kpis.map(function(k){var ult=getUlt(k.id),sem=semaforo(k,ult);return '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-light)"><span style="font-size:13px">'+(k.sigla?'<strong>'+k.sigla+'</strong> ':'')+k.nome+'</span><span style="font-size:12px;color:var(--text-secondary)">'+k.meta+k.unidade+'</span><span>'+(ult!==null?'<span class="badge b-'+({v:'green',a:'amber',r:'red',c:'gray'}[sem]||'gray')+'" style="font-size:10px">'+ult+k.unidade+'</span>':'<span style="font-size:11px;color:var(--text-tertiary)">—</span>')+'</span><input type="number" id="m5lv-'+k.id+'" placeholder="0" step="any"></div>';}).join('');}
-function salvarLancamento(){var opId=parseInt(document.getElementById('m5l-op').value),per=document.getElementById('m5l-per').value.trim();if(!opId||!per){alert('Selecione operação e período.');return;}var kpis=DB.m5.kpis.filter(function(k){return k.opId===opId}),cnt=0;kpis.forEach(function(k){var inp=document.getElementById('m5lv-'+k.id);if(!inp||inp.value.trim()==='')return;var val=parseFloat(inp.value),ex=DB.m5.lancamentos.find(function(l){return l.kpiId===k.id&&l.periodo===per});if(ex)ex.valor=val;else DB.m5.lancamentos.push({id:Date.now()+Math.random(),kpiId:k.id,opId:opId,periodo:per,valor:val});cnt++;});svDB();alert(cnt+' valor(es) salvos para '+per+'.');renderHome();}
+
 function renderM5Dash(){var sel=document.getElementById('m5-op-f').value,kpis=sel?DB.m5.kpis.filter(function(k){return String(k.opId)===sel}):DB.m5.kpis,el=document.getElementById('m5-dash-content');if(!kpis.length){el.innerHTML='<div class="empty-state"><i class="ti ti-target-off"></i><p>Crie uma operação e lance os primeiros resultados.</p></div>';return;}var byOp={};kpis.forEach(function(k){var op=DB.m5.operacoes.find(function(o){return o.id===k.opId}),n=op?op.nome:'Sem operação';if(!byOp[n])byOp[n]=[];byOp[n].push(k);});el.innerHTML=Object.keys(byOp).map(function(opNome){return '<div class="card"><div class="card-title"><i class="ti ti-building"></i>'+opNome+'</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px">'+byOp[opNome].map(function(k){var ult=getUlt(k.id),sem=semaforo(k,ult),sc=semColor(sem),hist=DB.m5.lancamentos.filter(function(l){return l.kpiId===k.id}).sort(function(a,b){return a.periodo.localeCompare(b.periodo)}).slice(-6),maxV=hist.length?Math.max.apply(null,hist.map(function(h){return h.valor})):1;return '<div style="background:var(--bg-secondary);border:1px solid var(--border-light);border-radius:var(--radius-md);padding:12px;border-top:3px solid '+sc+'"><div style="display:flex;align-items:center;gap:5px;margin-bottom:5px"><div class="sem '+semC(sem)+'"></div><span style="font-size:11px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(k.sigla||k.nome.substring(0,9))+'</span></div><div style="font-size:20px;font-weight:800;color:'+sc+'">'+(ult!==null?ult+k.unidade:'—')+'</div><div style="font-size:11px;color:var(--text-secondary)">Meta: '+k.meta+k.unidade+'</div>'+(hist.length>1?'<div class="sparkline-wrap">'+hist.map(function(h){var pct=maxV>0?Math.round((h.valor/maxV)*100):0;return '<div class="sparkline-bar" style="height:'+pct+'%;background:'+semColor(semaforo(k,h.valor))+';flex:1"></div>';}).join('')+'</div>':'')+'</div>';}).join('')+'</div></div>';}).join('');}
 function renderM5Tend(){var sel=document.getElementById('m5t-op').value,el=document.getElementById('m5-tend-content');if(!sel){el.innerHTML='<div class="empty-state"><i class="ti ti-trending-up"></i><p>Selecione uma operação.</p></div>';return;}var kpis=DB.m5.kpis.filter(function(k){return String(k.opId)===sel});if(!kpis.length){el.innerHTML='<div class="empty-state"><i class="ti ti-target-off"></i><p>Nenhum KPI nessa operação.</p></div>';return;}el.innerHTML=kpis.map(function(k){var hist=DB.m5.lancamentos.filter(function(l){return l.kpiId===k.id}).sort(function(a,b){return a.periodo.localeCompare(b.periodo)});if(!hist.length)return '<div class="card"><div style="font-size:13px;font-weight:600">'+(k.sigla||k.nome)+'</div><div style="font-size:12px;color:var(--text-secondary)">Sem dados lançados.</div></div>';var ult=hist[hist.length-1].valor,sem=semaforo(k,ult),minV=Math.min.apply(null,hist.map(function(h){return h.valor})),maxV=Math.max.apply(null,hist.map(function(h){return h.valor})),range=maxV-minV||1,pen=hist.length>1?hist[hist.length-2].valor:null,trend=pen!==null?(ult>pen?'up':ult<pen?'down':'flat'):'flat',trendOk=k.dir==='maior_melhor'?trend==='up':trend==='down';return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div class="sem '+semC(sem)+'" style="width:12px;height:12px"></div><span style="font-size:14px;font-weight:700;flex:1">'+(k.sigla?k.sigla+' — ':'')+k.nome+'</span><i class="ti ti-trending-'+(trend==='flat'?'flat"':trend+'\"')+' style="font-size:18px;color:'+(trend==='flat'?'var(--gray)':trendOk?'var(--green)':'var(--red)')+'" ></i><span style="font-size:18px;font-weight:800;color:'+semColor(sem)+'">'+ult+k.unidade+'</span></div><div style="display:flex;align-items:flex-end;gap:3px;height:56px;margin-bottom:6px">'+hist.map(function(h){var pct=Math.round(((h.valor-minV)/range)*80)+10;return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px"><div style="width:100%;border-radius:3px 3px 0 0;background:'+semColor(semaforo(k,h.valor))+';height:'+pct+'%" title="'+h.periodo+': '+h.valor+k.unidade+'"></div><div style="font-size:8px;color:var(--text-tertiary)">'+h.periodo.substring(0,5)+'</div></div>';}).join('')+'</div><div style="font-size:11.5px;color:var(--text-secondary);display:flex;gap:12px;flex-wrap:wrap"><span>Meta: <strong>'+k.meta+k.unidade+'</strong></span><span>Tolerância: <strong>'+k.tol+k.unidade+'</strong></span><span>'+hist.length+' período(s)</span>'+(pen!==null?'<span>Variação: <strong style="color:'+(trendOk?'var(--green)':'var(--red)')+'">'+(ult>pen?'+':'')+((ult-pen).toFixed(1))+k.unidade+'</strong></span>':'')+'</div></div>';}).join('');}
 
 /* ===== EXPORT ===== */
 function expAll(){dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/json'}),'callink_smn_backup_'+new Date().toISOString().substring(0,10)+'.json');}
-function importAll(evt){var f=evt.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{DB=JSON.parse(e.target.result);svDB();renderHome();rSels();alert('Dados importados com sucesso!');}catch(e){alert('Arquivo inválido.');}};r.readAsText(f);}
+
 function expM1HTML(){var h='<!DOC'+'TYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Processos — Callink</title><style>body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;font-size:13px;color:#1a1a2e}h1{font-size:20px;border-bottom:3px solid #0a3d6b;padding-bottom:8px;color:#0a3d6b;margin-bottom:6px}h2{font-size:15px;color:#0a3d6b;margin-top:22px;margin-bottom:8px;padding:6px 10px;background:#f0f5ff;border-left:3px solid #0a3d6b}table{width:100%;border-collapse:collapse;margin:8px 0}td,th{border:1px solid #ddd;padding:7px 10px}th{background:#e8f0fb;color:#0a3d6b;font-size:12px}.v{color:#166534;background:#dcfce7;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}.a{color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}.r{color:#991b1b;background:#fee2e2;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}ol{padding-left:20px;margin:6px 0}li{margin-bottom:4px;font-size:13px}@media print{body{margin:20px}}<\/style><\/head><body><h1>Relatório de Processos Mapeados — Callink</h1><p style="color:#888;font-size:12px;margin-bottom:20px">Gerado em '+new Date().toLocaleDateString('pt-BR')+' · '+DB.m1.processos.length+' processo(s)</p>';DB.m1.processos.forEach(function(p){var proj=DB.m1.projetos.find(function(x){return x.id===p.projetoId}),sc=p.score,cl=sc>=75?'v':sc>=50?'a':'r';h+='<h2>'+p.nome+'</h2><table><tr><th>Projeto</th><td>'+(proj?proj.nome:'—')+'</td><th>Tipo</th><td>'+p.tipo+'</td></tr><tr><th>Responsável</th><td>'+(p.responsavel||'—')+'</td><th>AN</th><td>'+(p.an||'—')+'</td></tr><tr><th>Data</th><td>'+(p.data||'—')+'</td><th>Score Maturidade</th><td><span class="'+cl+'">'+sc+'%</span></td></tr><tr><th>Volume diário</th><td>'+(p.volume||'—')+'</td><th>SLA</th><td>'+(p.sla||'—')+'</td></tr></table>';if(p.descricao)h+='<p style="margin:8px 0;font-size:13px;line-height:1.5">'+p.descricao+'</p>';var ets=p.etapas||p.steps||[];if(ets.length){h+='<strong>Fluxo AS IS:</strong><ol>'+ets.map(function(e,i){var txt=e.texto||e||'';var resp=e.responsavel?'<em> ('+e.responsavel+')</em>':'';var sla=e.sla_min?'<small> ['+e.sla_min+'min]</small>':'';var tipo=e.tipo==='decisao'?' ◇':'';return '<li>'+txt+tipo+resp+sla+'</li>';}).join('')+'</ol>';}if(p.sistemas&&p.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).length){h+='<strong>Sistemas:</strong><ul style="padding-left:20px;margin:6px 0">'+p.sistemas.filter(function(s){return s.nome&&s.nome.trim()}).map(function(s){return '<li>'+s.nome+(s.funcao?' — '+s.funcao:'')+'</li>';}).join('')+'</ul>';}if(p.oportunidades&&p.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).length){h+='<strong>Oportunidades:</strong><ul style="padding-left:20px;margin:6px 0">'+p.oportunidades.filter(function(o){return o.titulo&&o.titulo.trim()}).map(function(o){return '<li><strong>['+clL[o.classificacao]+']</strong> '+o.titulo+(o.descricao?' — '+o.descricao:'')+'</li>';}).join('')+'</ul>';}});h+='<\/body><\/html>';dl(new Blob([h],{type:'text/html;charset=utf-8'}),'m1_processos.html');}
 function expM2HTML(){var h='<!DOC'+'TYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Sistemas — Callink</title><style>body{font-family:Arial,sans-serif;max-width:980px;margin:40px auto;font-size:13px;color:#1a1a2e}h1{font-size:20px;border-bottom:3px solid #0a3d6b;padding-bottom:8px;color:#0a3d6b}table{width:100%;border-collapse:collapse;margin:10px 0}td,th{border:1px solid #ddd;padding:7px 10px}th{background:#e8f0fb;color:#0a3d6b}@media print{body{margin:20px}}<\/style><\/head><body><h1>Inventário de Sistemas — Callink</h1><p style="color:#888;font-size:12px;margin-bottom:16px">'+new Date().toLocaleDateString('pt-BR')+' · '+DB.m2.sistemas.length+' sistema(s)</p><table><thead><tr><th>Sistema</th><th>Categoria</th><th>Criticidade</th><th>Operações</th><th>Finalidade</th></tr></thead><tbody>'+DB.m2.sistemas.map(function(s){return '<tr><td><strong>'+s.nome+'</strong></td><td>'+(catL[s.categoria]||'Outro')+'</td><td>'+s.criticidade+'</td><td>'+(s.operacoes||'—')+'</td><td>'+(s.finalidade||'—')+'</td></tr>';}).join('')+'</tbody></table><\/body><\/html>';dl(new Blob([h],{type:'text/html;charset=utf-8'}),'m2_sistemas.html');}
 function expM3CSV(){var rows=[['Título','Tipo','Classificação','Status','Esforço','Impacto','Progresso (%)','Responsável','Origem','Descrição']];DB.m3.ops.forEach(function(o){rows.push([o.titulo,tipoL[o.tipo],clL[o.classificacao],stL[o.status],o.esforco,o.impacto,(o.progresso||0),o.responsavel||'',o.origem||'',o.descricao||'']);});dl(new Blob(['\uFEFF'+rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n')],{type:'text/csv;charset=utf-8'}),'m3_oportunidades.csv');}
@@ -1388,6 +1371,546 @@ function exportarFluxograma(){
   var nome=(WIZ.nome||'fluxograma').replace(/[^a-zA-Z0-9]/g,'_');
   var a=document.createElement('a');a.download='fluxo_as_is_'+nome+'.png';
   a.href=canvas.toDataURL('image/png');a.click();
+}
+
+/* =============================================
+   SUPABASE — Camada de persistência centralizada
+   Substitui localStorage por banco em tempo real
+   ============================================= */
+
+var SB_URL = 'https://eppkgjvtujnmndnkyuwl.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwcGtnanZ0dWpubW5kbmt5dXdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNTg2MjgsImV4cCI6MjA5NzkzNDYyOH0.GYFjNJruaHjS5cyDyC4ZEMLebX1u3d0uqKg6RmKmOfY';
+
+/* ---- Utilitário de fetch para a API REST do Supabase ---- */
+function sbFetch(path, opts) {
+  opts = opts || {};
+  var headers = {
+    'apikey': SB_KEY,
+    'Authorization': 'Bearer ' + SB_KEY,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (opts.prefer) headers['Prefer'] = opts.prefer;
+  else if (opts.method === 'POST' || opts.method === 'PATCH') headers['Prefer'] = 'return=representation';
+  return fetch(SB_URL + '/rest/v1/' + path, {
+    method: opts.method || 'GET',
+    headers: headers,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t) { throw new Error('HTTP ' + r.status + ': ' + t); });
+    if (r.status === 204 || r.status === 200 && opts.prefer === 'return=minimal') return [];
+    return r.json();
+  });
+}
+
+/* ---- SELECT ---- */
+function sbSelect(table, query) {
+  return sbFetch(table + '?' + (query || 'select=*&order=id.asc'));
+}
+
+/* ---- INSERT ---- */
+function sbInsert(table, data) {
+  return sbFetch(table, { method: 'POST', body: data });
+}
+
+/* ---- UPDATE ---- */
+function sbUpdate(table, id, data) {
+  return sbFetch(table + '?id=eq.' + id, {
+    method: 'PATCH', body: data, prefer: 'return=representation'
+  });
+}
+
+/* ---- DELETE ---- */
+function sbDelete(table, id) {
+  return sbFetch(table + '?id=eq.' + id, { method: 'DELETE', prefer: 'return=minimal' });
+}
+
+/* ---- UPSERT ---- */
+function sbUpsert(table, data) {
+  return sbFetch(table, {
+    method: 'POST', body: data,
+    prefer: 'resolution=merge-duplicates,return=representation'
+  });
+}
+
+/* ================================================
+   CARREGAMENTO INICIAL — ldDB puxa tudo do Supabase
+   ================================================ */
+function ldDB() {
+  showLoadingOverlay(true);
+  // Teste rápido de conectividade
+  fetch(SB_URL + '/rest/v1/', { headers: { 'apikey': SB_KEY } })
+    .catch(function() {
+      showLoadingOverlay(false);
+      showDbError('Não foi possível conectar ao Supabase. Verifique se o projeto está ativo em supabase.com');
+      return;
+    });
+  Promise.all([
+    sbSelect('m1_projetos'),
+    sbSelect('m1_processos'),
+    sbSelect('m2_sistemas'),
+    sbSelect('m2_integracoes'),
+    sbSelect('m3_ops'),
+    sbSelect('m4_projetos'),
+    sbSelect('m5_operacoes'),
+    sbSelect('m5_kpis'),
+    sbSelect('m5_lancamentos')
+  ]).then(function(results) {
+    DB.m1.projetos    = results[0].map(rowToProj);
+    DB.m1.processos   = results[1].map(rowToProc);
+    DB.m2.sistemas    = results[2].map(rowToSis);
+    DB.m2.integracoes = results[3].map(rowToInteg);
+    DB.m3.ops         = results[4].map(rowToOp);
+    DB.m4.projetos    = results[5].map(rowToM4Proj);
+    DB.m5.operacoes   = results[6].map(rowToM5Op);
+    DB.m5.kpis        = results[7].map(rowToKpi);
+    DB.m5.lancamentos = results[8].map(rowToLanc);
+    showLoadingOverlay(false);
+    renderHome();
+    rSels();
+    setupRealtime();
+  }).catch(function(err) {
+    console.error('Erro ao carregar dados:', err);
+    showLoadingOverlay(false);
+    showDbError('Não foi possível conectar ao banco. Verifique a conexão.');
+  });
+}
+
+/* svDB não faz mais nada — cada operação salva diretamente */
+function svDB() { /* no-op: saves happen per-operation */ }
+
+/* ================================================
+   MAPEADORES: linha do banco → objeto JS local
+   ================================================ */
+function rowToProj(r) {
+  return { id: r.id, nome: r.nome, cliente: r.cliente||'', an: r.an||'', desc: r.descricao||'', data: r.data||'' };
+}
+function rowToProc(r) {
+  return {
+    id: r.id, projetoId: r.projeto_id, nome: r.nome, tipo: r.tipo||'atendimento',
+    responsavel: r.responsavel||'', cargo: r.cargo||'', cliente: r.cliente||'',
+    data: r.data||'', an: r.an||'', descricao: r.descricao||'', perfis: r.perfis||'',
+    score: r.score||0, nos: r.nos||{}, raiz: r.raiz||null,
+    sistemas: r.sistemas||[], dores: r.dores||[], oportunidades: r.oportunidades||[],
+    volume: r.volume||'', tma: r.tma||'', sla: r.sla||'',
+    performance: r.performance||'', equipe: r.equipe||'', sazonalidade: r.sazonalidade||'',
+    dorPrincipal: r.dor_principal||'', retrabalho: r.retrabalho||'',
+    integTipo: r.integ_tipo||'nao', integDesc: r.integ_desc||''
+  };
+}
+function rowToSis(r) {
+  return { id: r.id, nome: r.nome, categoria: r.categoria||'outro', criticidade: r.criticidade||'media', finalidade: r.finalidade||'', operacoes: r.operacoes||'' };
+}
+function rowToInteg(r) {
+  return { id: r.id, origemId: r.origem_id, destinoId: r.destino_id, tipo: r.tipo||'manual', descricao: r.descricao||'', operacao: r.operacao||'' };
+}
+function rowToOp(r) {
+  return { id: r.id, titulo: r.titulo, tipo: r.tipo||'automacao', esforco: r.esforco||'medio', impacto: r.impacto||'alto', status: r.status||'ideia', classificacao: r.classificacao||'backlog', responsavel: r.responsavel||'', origem: r.origem||'', descricao: r.descricao||'', progresso: r.progresso||0 };
+}
+function rowToM4Proj(r) {
+  return { id: r.id, nome: r.nome, cliente: r.cliente||'', gestor: r.gestor||'', golive: r.golive||'', trilha: r.trilha||'', itens: r.itens||[] };
+}
+function rowToM5Op(r) {
+  return { id: r.id, nome: r.nome, cliente: r.cliente||'' };
+}
+function rowToKpi(r) {
+  return { id: r.id, opId: r.op_id, nome: r.nome, sigla: r.sigla||'', unidade: r.unidade||'%', meta: r.meta||0, tol: r.tol||0, dir: r.dir||'maior_melhor' };
+}
+function rowToLanc(r) {
+  return { id: r.id, kpiId: r.kpi_id, opId: r.op_id, periodo: r.periodo||'', valor: r.valor||0 };
+}
+
+/* ================================================
+   MAPEADORES: objeto JS → corpo para o banco
+   ================================================ */
+function projToRow(p) {
+  return { nome: p.nome, cliente: p.cliente||'', an: p.an||'', descricao: p.desc||'', data: p.data||'' };
+}
+function procToRow(p) {
+  return {
+    projeto_id: p.projetoId, nome: p.nome, tipo: p.tipo||'atendimento',
+    responsavel: p.responsavel||'', cargo: p.cargo||'', cliente: p.cliente||'',
+    data: p.data||'', an: p.an||'', descricao: p.descricao||'', perfis: p.perfis||'',
+    score: p.score||0, nos: p.nos||{}, raiz: p.raiz||null,
+    sistemas: p.sistemas||[], dores: p.dores||[], oportunidades: p.oportunidades||[],
+    volume: p.volume||'', tma: p.tma||'', sla: p.sla||'',
+    performance: p.performance||'', equipe: p.equipe||'', sazonalidade: p.sazonalidade||'',
+    dor_principal: p.dorPrincipal||'', retrabalho: p.retrabalho||'',
+    integ_tipo: p.integTipo||'nao', integ_desc: p.integDesc||'',
+    updated_at: new Date().toISOString()
+  };
+}
+function sisToRow(s) {
+  return { nome: s.nome, categoria: s.categoria||'outro', criticidade: s.criticidade||'media', finalidade: s.finalidade||'', operacoes: s.operacoes||'' };
+}
+function integToRow(i) {
+  return { origem_id: i.origemId, destino_id: i.destinoId, tipo: i.tipo||'manual', descricao: i.descricao||'', operacao: i.operacao||'' };
+}
+function opToRow(o) {
+  return { titulo: o.titulo, tipo: o.tipo||'automacao', esforco: o.esforco||'medio', impacto: o.impacto||'alto', status: o.status||'ideia', classificacao: o.classificacao||'backlog', responsavel: o.responsavel||'', origem: o.origem||'', descricao: o.descricao||'', progresso: o.progresso||0, updated_at: new Date().toISOString() };
+}
+function m4ProjToRow(p) {
+  return { nome: p.nome, cliente: p.cliente||'', gestor: p.gestor||'', golive: p.golive||'', trilha: p.trilha||'', itens: p.itens||[], updated_at: new Date().toISOString() };
+}
+function m5OpToRow(o) {
+  return { nome: o.nome, cliente: o.cliente||'' };
+}
+function kpiToRow(k) {
+  return { op_id: k.opId, nome: k.nome, sigla: k.sigla||'', unidade: k.unidade||'%', meta: k.meta||0, tol: k.tol||0, dir: k.dir||'maior_melhor' };
+}
+function lancToRow(l) {
+  return { kpi_id: l.kpiId, op_id: l.opId, periodo: l.periodo, valor: l.valor };
+}
+
+/* ================================================
+   REALTIME — ouve mudanças feitas por outros ANs
+   ================================================ */
+function setupRealtime() {
+  if (typeof WebSocket === 'undefined') return;
+  // Supabase Realtime via WebSocket
+  var wsUrl = SB_URL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SB_KEY + '&vsn=1.0.0';
+  var ws;
+  var reconnectDelay = 3000;
+
+  function connect() {
+    try {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = function() {
+        // Assinar tabelas principais
+        ['m1_projetos','m1_processos','m2_sistemas','m3_ops','m4_projetos','m5_kpis','m5_lancamentos'].forEach(function(table) {
+          ws.send(JSON.stringify({
+            topic: 'realtime:public:' + table,
+            event: 'phx_join',
+            payload: { config: { broadcast: { self: false }, presence: {}, postgres_changes: [{ event: '*', schema: 'public', table: table }] } },
+            ref: table
+          }));
+        });
+      };
+      ws.onmessage = function(ev) {
+        try {
+          var msg = JSON.parse(ev.data);
+          if (msg.event === 'postgres_changes') {
+            handleRealtimeChange(msg.payload);
+          }
+        } catch(e) {}
+      };
+      ws.onclose = function() {
+        setTimeout(connect, reconnectDelay);
+      };
+      ws.onerror = function() {
+        ws.close();
+      };
+    } catch(e) {}
+  }
+  connect();
+}
+
+function handleRealtimeChange(payload) {
+  var table = payload.table;
+  var eventType = payload.eventType; // INSERT, UPDATE, DELETE
+  var newRow = payload.new || {};
+  var oldRow = payload.old || {};
+
+  if (table === 'm1_projetos') {
+    if (eventType === 'INSERT') { DB.m1.projetos.push(rowToProj(newRow)); }
+    else if (eventType === 'UPDATE') { var i=DB.m1.projetos.findIndex(function(x){return x.id===newRow.id;}); if(i>=0) DB.m1.projetos[i]=rowToProj(newRow); }
+    else if (eventType === 'DELETE') { DB.m1.projetos=DB.m1.projetos.filter(function(x){return x.id!==oldRow.id;}); }
+    renderM1Proj(); rSels();
+  } else if (table === 'm1_processos') {
+    if (eventType === 'INSERT') { DB.m1.processos.push(rowToProc(newRow)); }
+    else if (eventType === 'UPDATE') { var i=DB.m1.processos.findIndex(function(x){return x.id===newRow.id;}); if(i>=0) DB.m1.processos[i]=rowToProc(newRow); }
+    else if (eventType === 'DELETE') { DB.m1.processos=DB.m1.processos.filter(function(x){return x.id!==oldRow.id;}); }
+    renderM1Proc();
+  } else if (table === 'm2_sistemas') {
+    if (eventType === 'INSERT') { DB.m2.sistemas.push(rowToSis(newRow)); }
+    else if (eventType === 'UPDATE') { var i=DB.m2.sistemas.findIndex(function(x){return x.id===newRow.id;}); if(i>=0) DB.m2.sistemas[i]=rowToSis(newRow); }
+    else if (eventType === 'DELETE') { DB.m2.sistemas=DB.m2.sistemas.filter(function(x){return x.id!==oldRow.id;}); }
+    renderM2Inv();
+  } else if (table === 'm3_ops') {
+    if (eventType === 'INSERT') { DB.m3.ops.push(rowToOp(newRow)); }
+    else if (eventType === 'UPDATE') { var i=DB.m3.ops.findIndex(function(x){return x.id===newRow.id;}); if(i>=0) DB.m3.ops[i]=rowToOp(newRow); }
+    else if (eventType === 'DELETE') { DB.m3.ops=DB.m3.ops.filter(function(x){return x.id!==oldRow.id;}); }
+    renderM3Lista(); renderM3Kanban();
+  } else if (table === 'm4_projetos') {
+    if (eventType === 'INSERT') { DB.m4.projetos.push(rowToM4Proj(newRow)); }
+    else if (eventType === 'UPDATE') { var i=DB.m4.projetos.findIndex(function(x){return x.id===newRow.id;}); if(i>=0) DB.m4.projetos[i]=rowToM4Proj(newRow); }
+    else if (eventType === 'DELETE') { DB.m4.projetos=DB.m4.projetos.filter(function(x){return x.id!==oldRow.id;}); }
+    renderM4Proj(); rSels();
+  }
+  renderHome();
+}
+
+/* ================================================
+   OVERLAY DE LOADING e ERRO
+   ================================================ */
+function showLoadingOverlay(show) {
+  var el = document.getElementById('sb-loading');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+function showDbError(msg) {
+  var el = document.getElementById('sb-error');
+  if (el) { el.textContent = '⚠ ' + msg; el.style.display = 'block'; }
+}
+
+/* ================================================
+   WRAPPERS das funções de escrita
+   Substituem o padrão: DB.xxx.push(...); svDB()
+   por: sbInsert/Update/Delete + atualiza DB local
+   ================================================ */
+
+/* M1 — Projetos */
+function salvarM1Proj() {
+  var n = document.getElementById('m1pn-nome').value.trim();
+  if (!n) { alert('Informe o nome.'); return; }
+  var row = { nome: n, cliente: document.getElementById('m1pn-cli').value.trim(), an: document.getElementById('m1pn-an').value.trim(), descricao: document.getElementById('m1pn-desc').value.trim(), data: new Date().toLocaleDateString('pt-BR') };
+  sbInsert('m1_projetos', row).then(function(rows) {
+    DB.m1.projetos.push(rowToProj(rows[0]));
+    cm('modal-m1-proj');
+    renderM1Proj(); rSels();
+  }).catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+}
+
+function delM1Proj(id) {
+  if (!confirm('Excluir projeto e processos?')) return;
+  sbDelete('m1_projetos', id).then(function() {
+    DB.m1.projetos = DB.m1.projetos.filter(function(p) { return p.id !== id; });
+    DB.m1.processos = DB.m1.processos.filter(function(p) { return p.projetoId !== id; });
+    renderM1Proj(); rSels();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+
+/* M1 — Processos (via wizard) */
+function wizSave() {
+  wizSave2Step();
+  if (!WIZ.projetoId || !WIZ.nome) { alert('Preencha projeto e nome.'); WIZ.step = 0; rWizStep(); return; }
+  WIZ.score = calcScore(WIZ);
+  WIZ.oportunidades = WIZ.oportunidades.map(function(o) { o.classificacao = classify(o); return o; });
+  var row = procToRow(WIZ);
+  var isEdit = !!WIZ._editId;
+  var promise = isEdit ? sbUpdate('m1_processos', WIZ._editId, row) : sbInsert('m1_processos', row);
+  promise.then(function(rows) {
+    var saved = rowToProc(rows[0]);
+    if (isEdit) {
+      var idx = DB.m1.processos.findIndex(function(p) { return p.id === WIZ._editId; });
+      if (idx >= 0) DB.m1.processos[idx] = saved;
+    } else {
+      DB.m1.processos.push(saved);
+    }
+    // Propagar oportunidades e sistemas
+    var ops = WIZ.oportunidades.filter(function(o) { return o.titulo && o.titulo.trim(); });
+    var siss = WIZ.sistemas.filter(function(s) { return s.nome && s.nome.trim(); });
+    var opPromises = ops.filter(function(o) {
+      return !DB.m3.ops.some(function(x) { return x.titulo.toLowerCase() === o.titulo.trim().toLowerCase(); });
+    }).map(function(o) {
+      return sbInsert('m3_ops', opToRow({ titulo: o.titulo.trim(), tipo: o.tipo||'automacao', esforco: o.esforco||'medio', impacto: o.impacto||'alto', status: 'ideia', responsavel: '', origem: WIZ.nome||'', descricao: o.descricao||'', classificacao: o.classificacao, progresso: 0 }))
+        .then(function(r) { DB.m3.ops.push(rowToOp(r[0])); });
+    });
+    var sisPromises = siss.filter(function(s) {
+      return !DB.m2.sistemas.some(function(x) { return x.nome.toLowerCase() === s.nome.trim().toLowerCase(); });
+    }).map(function(s) {
+      return sbInsert('m2_sistemas', sisToRow({ nome: s.nome.trim(), categoria: 'outro', criticidade: 'media', finalidade: s.funcao||'', operacoes: WIZ.nome||'' }))
+        .then(function(r) { DB.m2.sistemas.push(rowToSis(r[0])); });
+    });
+    return Promise.all(opPromises.concat(sisPromises));
+  }).then(function() {
+    alert(isEdit ? 'Processo atualizado! Score: ' + WIZ.score + '%' : 'Processo salvo! Score: ' + WIZ.score + '%');
+    nav('m1-proc');
+  }).catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+}
+
+function delM1Proc(id) {
+  if (!confirm('Excluir?')) return;
+  sbDelete('m1_processos', id).then(function() {
+    DB.m1.processos = DB.m1.processos.filter(function(p) { return p.id !== id; });
+    renderM1Proc();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+
+/* M2 — Sistemas */
+function salvarM2Sys() {
+  var n = document.getElementById('m2sn-nome').value.trim();
+  if (!n) { alert('Informe o nome.'); return; }
+  sbInsert('m2_sistemas', sisToRow({ nome: n, categoria: document.getElementById('m2sn-cat').value, criticidade: document.getElementById('m2sn-crit').value, finalidade: document.getElementById('m2sn-fin').value.trim(), operacoes: document.getElementById('m2sn-ops').value.trim() }))
+    .then(function(rows) { DB.m2.sistemas.push(rowToSis(rows[0])); cm('modal-m2-sys'); renderM2Inv(); })
+    .catch(function(e) { alert('Erro: ' + e.message); });
+}
+function delM2Sys(id) {
+  if (!confirm('Excluir?')) return;
+  sbDelete('m2_sistemas', id).then(function() {
+    DB.m2.sistemas = DB.m2.sistemas.filter(function(s) { return String(s.id) !== String(id); });
+    renderM2Inv();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+function salvarM2Integ() {
+  var o = document.getElementById('m2in-orig').value, d = document.getElementById('m2in-dest').value;
+  if (!o || !d) { alert('Selecione origem e destino.'); return; }
+  if (o === d) { alert('Iguais.'); return; }
+  sbInsert('m2_integracoes', integToRow({ origemId: parseInt(o), destinoId: parseInt(d), tipo: document.getElementById('m2in-tipo').value, descricao: document.getElementById('m2in-desc').value.trim(), operacao: document.getElementById('m2in-op').value.trim() }))
+    .then(function(rows) { DB.m2.integracoes.push(rowToInteg(rows[0])); cm('modal-m2-integ'); renderM2Integ(); })
+    .catch(function(e) { alert('Erro: ' + e.message); });
+}
+function delM2Integ(id) {
+  if (!confirm('Excluir?')) return;
+  sbDelete('m2_integracoes', id).then(function() {
+    DB.m2.integracoes = DB.m2.integracoes.filter(function(i) { return i.id !== id; });
+    renderM2Integ();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+
+/* M3 — Oportunidades */
+function salvarM3Op() {
+  var t = document.getElementById('m3on-tit').value.trim();
+  if (!t) { alert('Informe o título.'); return; }
+  var o = { titulo: t, tipo: document.getElementById('m3on-tipo').value, esforco: document.getElementById('m3on-esf').value, impacto: document.getElementById('m3on-imp').value, status: 'ideia', responsavel: document.getElementById('m3on-resp').value.trim(), origem: document.getElementById('m3on-orig').value.trim(), descricao: document.getElementById('m3on-desc').value.trim(), progresso: 0 };
+  o.classificacao = classify(o);
+  sbInsert('m3_ops', opToRow(o)).then(function(rows) {
+    DB.m3.ops.push(rowToOp(rows[0])); cm('modal-m3-op'); renderM3Lista();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+function avancarM3() {
+  if (!M3DET) return;
+  var o = DB.m3.ops.find(function(x) { return x.id === M3DET.id; });
+  if (!o) return;
+  var nextSt = { ideia: 'analise', analise: 'execucao', execucao: 'concluido', concluido: 'concluido' };
+  o.status = nextSt[o.status] || o.status;
+  var p = document.getElementById('m3det-prog');
+  if (p) o.progresso = parseInt(p.value) || o.progresso || 0;
+  sbUpdate('m3_ops', o.id, opToRow(o)).then(function(rows) {
+    var idx = DB.m3.ops.findIndex(function(x) { return x.id === o.id; });
+    if (idx >= 0) DB.m3.ops[idx] = rowToOp(rows[0]);
+    cm('modal-m3-det'); renderM3Lista(); renderHome();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+// openM3Det — só atualiza progresso localmente, salva ao avançar (já feito acima)
+
+/* M4 — Projetos */
+function salvarM4Proj() {
+  var n = document.getElementById('m4pn-nome').value.trim();
+  if (!n) { alert('Informe o nome.'); return; }
+  var t = document.getElementById('m4pn-trilha').value;
+  var itens = [];
+  if (t && TRILHAS[t]) TRILHAS[t].forEach(function(x) { itens.push({ id: Date.now() + Math.random(), secao: x.secao, desc: x.desc, prio: x.prio, status: 'pendente', responsavel: '', prazo: '', obs: '' }); });
+  var row = m4ProjToRow({ nome: n, cliente: document.getElementById('m4pn-cli').value.trim(), gestor: document.getElementById('m4pn-gest').value.trim(), golive: document.getElementById('m4pn-gl').value.trim(), trilha: t, itens: itens });
+  sbInsert('m4_projetos', row).then(function(rows) {
+    DB.m4.projetos.push(rowToM4Proj(rows[0])); cm('modal-m4-proj'); renderM4Proj(); rSels();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+function delM4Proj(id) {
+  if (!confirm('Excluir?')) return;
+  sbDelete('m4_projetos', id).then(function() {
+    DB.m4.projetos = DB.m4.projetos.filter(function(p) { return p.id !== id; });
+    renderM4Proj(); rSels();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+function _saveM4Proj(id) {
+  var p = DB.m4.projetos.find(function(x) { return x.id === id; });
+  if (!p) return Promise.resolve();
+  return sbUpdate('m4_projetos', id, m4ProjToRow(p)).catch(function(e) { console.error('Erro M4 save:', e); });
+}
+function salvarM4Item() {
+  var pId = parseInt(document.getElementById('m4in-proj').value);
+  var p = DB.m4.projetos.find(function(x) { return x.id === pId; });
+  if (!p) { alert('Selecione o projeto.'); return; }
+  var desc = document.getElementById('m4in-desc').value.trim();
+  if (!desc) { alert('Informe a descrição.'); return; }
+  p.itens.push({ id: Date.now() + Math.random(), secao: document.getElementById('m4in-sec').value.trim() || 'Geral', desc: desc, prio: document.getElementById('m4in-prio').value, status: 'pendente', responsavel: document.getElementById('m4in-resp').value.trim(), prazo: document.getElementById('m4in-prazo').value.trim(), obs: '' });
+  _saveM4Proj(pId).then(function() { cm('modal-m4-item'); renderM4CK(); });
+}
+function togM4(pId, iId) {
+  var p = DB.m4.projetos.find(function(x) { return x.id === pId; });
+  var it = p && p.itens.find(function(x) { return x.id === iId; });
+  if (!it) return;
+  it.status = it.status === 'concluido' ? 'pendente' : 'concluido';
+  _saveM4Proj(pId).then(function() { renderM4CK(); renderHome(); });
+}
+function salvarM4Edit() {
+  var pId = parseInt(document.getElementById('m4e-pid').value);
+  var iId = parseFloat(document.getElementById('m4e-iid').value);
+  var p = DB.m4.projetos.find(function(x) { return x.id === pId; });
+  var it = p && p.itens.find(function(x) { return x.id === iId; });
+  if (!it) return;
+  it.status = document.getElementById('m4e-st').value;
+  it.responsavel = document.getElementById('m4e-resp').value.trim();
+  it.prazo = document.getElementById('m4e-prazo').value.trim();
+  it.obs = document.getElementById('m4e-obs').value.trim();
+  _saveM4Proj(pId).then(function() { cm('modal-m4-edit'); renderM4CK(); renderHome(); });
+}
+function delM4I(pId, iId) {
+  if (!confirm('Excluir?')) return;
+  var p = DB.m4.projetos.find(function(x) { return x.id === pId; });
+  if (!p) return;
+  p.itens = p.itens.filter(function(x) { return x.id !== iId; });
+  _saveM4Proj(pId).then(function() { renderM4CK(); });
+}
+
+/* M5 — Operações, KPIs, Lançamentos */
+function salvarM5Op() {
+  var n = document.getElementById('m5on-nome').value.trim();
+  if (!n) { alert('Informe o nome.'); return; }
+  sbInsert('m5_operacoes', m5OpToRow({ nome: n, cliente: document.getElementById('m5on-cli').value.trim() }))
+    .then(function(rows) {
+      var op = rowToM5Op(rows[0]);
+      DB.m5.operacoes.push(op);
+      var pad = document.getElementById('m5on-pad').value;
+      if (pad && KPI_P[pad]) {
+        return Promise.all(KPI_P[pad].map(function(k) {
+          return sbInsert('m5_kpis', kpiToRow({ opId: op.id, nome: k.nome, sigla: k.sigla||'', unidade: k.un, meta: k.meta, tol: k.tol, dir: k.dir }))
+            .then(function(r) { DB.m5.kpis.push(rowToKpi(r[0])); });
+        }));
+      }
+    }).then(function() { cm('modal-m5-op'); renderM5Dash(); rSels(); })
+    .catch(function(e) { alert('Erro: ' + e.message); });
+}
+function salvarM5KPI() {
+  var opId = parseInt(document.getElementById('m5kn-op').value);
+  var n = document.getElementById('m5kn-nome').value.trim();
+  if (!opId || !n) { alert('Selecione operação e nome.'); return; }
+  sbInsert('m5_kpis', kpiToRow({ opId: opId, nome: n, sigla: '', unidade: document.getElementById('m5kn-un').value, meta: parseFloat(document.getElementById('m5kn-meta').value)||0, tol: parseFloat(document.getElementById('m5kn-tol').value)||0, dir: document.getElementById('m5kn-dir').value }))
+    .then(function(rows) { DB.m5.kpis.push(rowToKpi(rows[0])); cm('modal-m5-kpi'); renderM5Dash(); })
+    .catch(function(e) { alert('Erro: ' + e.message); });
+}
+function salvarLancamento() {
+  var opId = parseInt(document.getElementById('m5l-op').value);
+  var per = document.getElementById('m5l-per').value.trim();
+  if (!opId || !per) { alert('Selecione operação e período.'); return; }
+  var kpis = DB.m5.kpis.filter(function(k) { return k.opId === opId; });
+  var promises = [];
+  kpis.forEach(function(k) {
+    var inp = document.getElementById('m5lv-' + k.id);
+    if (!inp || inp.value.trim() === '') return;
+    var val = parseFloat(inp.value);
+    var ex = DB.m5.lancamentos.find(function(l) { return l.kpiId === k.id && l.periodo === per; });
+    if (ex) {
+      promises.push(sbUpdate('m5_lancamentos', ex.id, { valor: val }).then(function(r) { ex.valor = val; }));
+    } else {
+      promises.push(sbInsert('m5_lancamentos', lancToRow({ kpiId: k.id, opId: opId, periodo: per, valor: val }))
+        .then(function(r) { DB.m5.lancamentos.push(rowToLanc(r[0])); }));
+    }
+  });
+  Promise.all(promises).then(function() {
+    alert(promises.length + ' valor(es) salvos para ' + per + '.'); renderHome();
+  }).catch(function(e) { alert('Erro: ' + e.message); });
+}
+
+/* importAll — restaura backup JSON para o Supabase */
+function importAll(evt) {
+  var f = evt.target.files[0]; if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var backup = JSON.parse(e.target.result);
+      if (!confirm('Isso irá SUBSTITUIR todos os dados do banco. Confirma?')) return;
+      showLoadingOverlay(true);
+      // Limpar e reinserir — simplificado: apenas recarrega do backup no DB local
+      // Para um import completo para o Supabase seria necessário apagar e reinserir
+      // Por ora, mantém compatibilidade básica
+      DB = backup;
+      showLoadingOverlay(false);
+      renderHome(); rSels();
+      alert('Backup carregado localmente. Para sincronizar com o banco, salve cada item individualmente.');
+    } catch(ex) { showLoadingOverlay(false); alert('Arquivo inválido.'); }
+  };
+  reader.readAsText(f);
 }
 
 /* ===== INIT ===== */
