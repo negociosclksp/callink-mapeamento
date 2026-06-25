@@ -195,6 +195,11 @@ textarea{resize:vertical;min-height:60px}
     <div class="nav-section">Dados</div>
     <div class="nav-item" onclick="nav('exportar')" id="nav-exportar"><i class="ti ti-download"></i> Exportar tudo</div>
   </div>
+  <div class="nav-divider"></div>
+  <div class="nav-group">
+    <div class="nav-section">Admin</div>
+    <div class="nav-item" onclick="nav('admin')" id="nav-admin"><i class="ti ti-settings"></i> Cadastros</div>
+  </div>
 </div>
 
 <!-- CONTENT -->
@@ -363,10 +368,40 @@ textarea{resize:vertical;min-height:60px}
     </div>
   </div>
 </div>
+<!-- ADMIN — Página única com abas -->
+<div class="view" id="view-admin">
+  <div class="page-header">
+    <div class="page-title">Admin · Cadastros</div>
+    <div class="page-sub">Gerencie ANs, Clientes, Sistemas e configurações do sistema</div>
+  </div>
+  <!-- Abas -->
+  <div style="display:flex;gap:2px;border-bottom:2px solid var(--color-border-tertiary);margin-bottom:20px;overflow-x:auto">
+    <button class="admin-tab active" onclick="switchAdminTab('ans',this)"><i class="ti ti-users"></i> Analistas</button>
+    <button class="admin-tab" onclick="switchAdminTab('clientes',this)"><i class="ti ti-building"></i> Clientes</button>
+    <button class="admin-tab" onclick="switchAdminTab('sistemas',this)"><i class="ti ti-server"></i> Sistemas</button>
+    <button class="admin-tab" onclick="switchAdminTab('tipos',this)"><i class="ti ti-tag"></i> Tipos de célula</button>
+    <button class="admin-tab" onclick="switchAdminTab('perfis',this)"><i class="ti ti-id-badge"></i> Perfis</button>
+    <button class="admin-tab" onclick="switchAdminTab('kpi',this)"><i class="ti ti-chart-bar"></i> Pacotes KPI</button>
+  </div>
+  <!-- Conteúdo das abas -->
+  <div id="admin-tab-content"></div>
+</div>
 
 </div><!-- /content -->
 </div><!-- /main -->
 
+
+
+<!-- MODAL ADMIN GENÉRICO -->
+<div class="modal-overlay" id="modal-admin"><div class="modal">
+  <button class="close-btn" onclick="cm('modal-admin')">×</button>
+  <div class="modal-title" id="admin-modal-title">Cadastrar</div>
+  <div id="admin-modal-body"></div>
+  <div class="nav-btns">
+    <button class="btn" onclick="cm('modal-admin')">Cancelar</button>
+    <button class="btn primary" onclick="salvarAdmin()"><i class="ti ti-check"></i> Salvar</button>
+  </div>
+</div></div>
 
 <!-- MODAL FLUXOGRAMA -->
 <div class="modal-overlay" id="modal-fluxograma" onclick="if(event.target===this)cm('modal-fluxograma')" style="padding-top:20px;align-items:flex-start">
@@ -393,11 +428,21 @@ textarea{resize:vertical;min-height:60px}
   <div style="font-size:13px;font-weight:500;color:#0a3d6b">Conectando ao banco...</div>
 </div>
 <div id="sb-error" style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#fee2e2;color:#991b1b;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:998;border:1px solid #fca5a5"></div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<style>@keyframes spin{to{transform:rotate(360deg)}}
+  .admin-tab{background:none;border:none;padding:10px 16px;font-size:13px;font-weight:500;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s}
+  .admin-tab:hover{color:var(--color-text-primary);background:var(--color-background-secondary)}
+  .admin-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+  .admin-inline-form{background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:10px;padding:16px;margin-bottom:16px;animation:fadeIn .15s ease}
+  .admin-table{width:100%;border-collapse:collapse}
+  .admin-table th{text-align:left;font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;padding:8px 12px;border-bottom:2px solid var(--color-border-tertiary)}
+  .admin-table td{padding:10px 12px;border-bottom:1px solid var(--color-border-tertiary);font-size:13px;vertical-align:middle}
+  .admin-table tr:last-child td{border-bottom:none}
+  .admin-table tr:hover td{background:var(--color-background-secondary)}
+</style>
 </div><!-- /app -->
 
 <!-- MODALS -->
-<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><input type="text" id="m1pn-cli"></div><div class="form-row"><label class="form-label">AN responsável</label><input type="text" id="m1pn-an"></div><div class="form-row"><label class="form-label">Descrição</label><input type="text" id="m1pn-desc"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
+<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><select id="m1pn-cli" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">AN responsável</label><select id="m1pn-an" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Descrição</label><input type="text" id="m1pn-desc"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-sys"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-sys')">×</button><div class="modal-title">Cadastrar sistema</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m2sn-nome"></div><div class="form-row"><label class="form-label">Categoria</label><select id="m2sn-cat"><option value="crm">CRM</option><option value="telefonia">Telefonia</option><option value="wfm">WFM</option><option value="qualidade">Qualidade</option><option value="bi">BI</option><option value="rpa">RPA</option><option value="cliente">Sistema cliente</option><option value="outro">Outro</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m2sn-crit"><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div><div class="form-row"><label class="form-label">Operações</label><input type="text" id="m2sn-ops"></div></div><div class="form-row"><label class="form-label">Finalidade</label><textarea id="m2sn-fin"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-sys')">Cancelar</button><button class="btn primary" onclick="salvarM2Sys()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-integ"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-integ')">×</button><div class="modal-title">Nova integração</div><div class="form-grid"><div class="form-row"><label class="form-label">Origem *</label><select id="m2in-orig"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Destino *</label><select id="m2in-dest"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Tipo</label><select id="m2in-tipo"><option value="api">API automática</option><option value="manual">Manual</option><option value="arquivo">Arquivo</option><option value="webhook">Webhook</option><option value="nenhuma">Sem integração</option></select></div><div class="form-row"><label class="form-label">Operação</label><input type="text" id="m2in-op"></div></div><div class="form-row"><label class="form-label">Descrição</label><textarea id="m2in-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-integ')">Cancelar</button><button class="btn primary" onclick="salvarM2Integ()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m3-op"><div class="modal"><button class="close-btn" onclick="cm('modal-m3-op')">×</button><div class="modal-title">Nova oportunidade</div><div class="form-grid"><div class="form-row"><label class="form-label">Título *</label><input type="text" id="m3on-tit"></div><div class="form-row"><label class="form-label">Tipo</label><select id="m3on-tipo"><option value="automacao">Automação</option><option value="processo">Processo</option><option value="tecnologia">Tecnologia</option><option value="negocio">Negócio</option><option value="treinamento">Treinamento</option></select></div><div class="form-row"><label class="form-label">Esforço</label><select id="m3on-esf"><option value="baixo">Baixo</option><option value="medio">Médio</option><option value="alto">Alto</option></select></div><div class="form-row"><label class="form-label">Impacto</label><select id="m3on-imp"><option value="alto">Alto</option><option value="medio">Médio</option><option value="baixo">Baixo</option></select></div><div class="form-row"><label class="form-label">Responsável</label><input type="text" id="m3on-resp"></div><div class="form-row"><label class="form-label">Origem (processo)</label><input type="text" id="m3on-orig"></div></div><div class="form-row"><label class="form-label">Descrição / ganho esperado</label><textarea id="m3on-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m3-op')">Cancelar</button><button class="btn primary" onclick="salvarM3Op()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
@@ -427,7 +472,7 @@ textarea{resize:vertical;min-height:60px}
 })();
 
 /* ===== DB ===== */
-var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]}};
+var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]},admin:{ans:[],clientes:[],sistemas:[],tiposCelula:[],perfis:[],kpiPacotes:[]}};
 var WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:null,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
 var M3DET=null;
 
@@ -459,15 +504,27 @@ function semColor(s){return s==='v'?'#1D9E75':s==='a'?'#EF9F27':s==='r'?'#E24B4A
 
 
 function rSels(){
-  var m1o='<option value="">Todos os projetos</option>'+DB.m1.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>'}).join('');
-  ['m1p-proj'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=m1o;});
-  var m4s='<option value="">Selecione o projeto...</option>'+DB.m4.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>'}).join('');
-  ['m4-ck-sel'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=m4s;});
-  document.getElementById('m4in-proj').innerHTML='<option value="">Selecione...</option>'+DB.m4.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>'}).join('');
-  var m5oa='<option value="">Todas as operações</option>'+DB.m5.operacoes.map(function(o){return '<option value="'+o.id+'">'+o.nome+'</option>'}).join('');
-  var m5os='<option value="">Selecione...</option>'+DB.m5.operacoes.map(function(o){return '<option value="'+o.id+'">'+o.nome+'</option>'}).join('');
-  ['m5-op-f','m5t-op'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=m5oa;});
-  ['m5l-op','m5kn-op'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=m5os;});
+  // Selects de AN
+  var anOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.ans||[]).map(function(a){return '<option value="'+a.nome+'">'+a.nome+(a.cargo?' ('+a.cargo+')':'')+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  // Selects de Cliente
+  var cliOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.clientes||[]).map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  // Selects de Sistema
+  var sisOpts='<option value="">Nenhum</option>'+(DB.admin&&DB.admin.sistemas||[]).map(function(s){return '<option value="'+s.nome+'">'+s.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  // Selects de Tipo célula
+  var tipoOpts=(DB.admin&&DB.admin.tiposCelula&&DB.admin.tiposCelula.length?DB.admin.tiposCelula:[{nome:'Atendimento (voz/chat/email)',codigo:'atendimento'},{nome:'Backoffice',codigo:'backoffice'},{nome:'Qualidade/Monitoria',codigo:'qualidade'},{nome:'Gestão/Supervisão',codigo:'gestao'},{nome:'Staff — Processos',codigo:'staff_proc'}]).map(function(t){return '<option value="'+(t.codigo||t.nome)+'">'+t.nome+'</option>';}).join('');
+  // Selects de Perfil
+  var perfOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.perfis||[]).map(function(p){return '<option value="'+p.nome+'">'+p.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  // Preencher selects no DOM
+  ['m1pn-cli'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=cliOpts;});
+  ['m1pn-an'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=anOpts;});
+  // Salvar opts globais para uso nos wizards
+  window._rSelsOpts={an:anOpts,cli:cliOpts,sis:sisOpts,tipo:tipoOpts,perf:perfOpts};
+  // KPI pacotes para M5
+  var kpiPacOpts='<option value="">Sem pacote</option>'+(DB.admin&&DB.admin.kpiPacotes||[]).map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
+  var padEl=document.getElementById('m5on-pad');if(padEl)padEl.innerHTML=kpiPacOpts;
+  // Projeto select
+  var projOpts='<option value="">Selecione...</option>'+DB.m1.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
+  ['m5l-op','m4in-proj'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=projOpts;});
 }
 
 /* ===== HOME ===== */
@@ -510,7 +567,7 @@ function nav(id){
     'm2-inv':renderM2Inv,'m2-integ':renderM2Integ,'m3-lista':renderM3Lista,
     'm3-matriz':renderM3Matriz,'m3-kanban':renderM3Kanban,'m4-proj':renderM4Proj,
     'm4-ck':renderM4CK,'m5-dash':renderM5Dash,'m5-tend':renderM5Tend,
-    'm5-lancar':rSels,'exportar':function(){},'m1-wiz':initWiz};
+    'm5-lancar':rSels,'exportar':function(){},'m1-wiz':initWiz,'admin':renderAdmin};
   if(r[id])r[id]();
   rSels();
 }
@@ -580,9 +637,9 @@ function rWizStep(){
         '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do processo *</label>'+
           '<input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div>'+
         '<div class="form-row"><label class="form-label">Tipo de célula</label>'+
-          '<select id="wiz-tipo">'+tipoOptHtml+'</select></div>'+
+          '<select id="wiz-tipo">'+(window._rSelsOpts&&window._rSelsOpts.tipo||tipoOptHtml)+'</select></div>'+
         '<div class="form-row"><label class="form-label">Cliente</label>'+
-          '<input type="text" id="wiz-cliente" placeholder="Ex: Keeta, FIS..." value="'+(WIZ.cliente||'')+'"></div>'+
+          '<select id="wiz-cliente" style="width:100%"><option value="">Selecione...</option>'+(window._rSelsOpts&&window._rSelsOpts.cli||'')+'</select></div>'+
         '<div class="form-row"><label class="form-label">Nome do entrevistado</label>'+
           '<input type="text" id="wiz-resp" placeholder="Nome" value="'+(WIZ.responsavel||'')+'"></div>'+
         '<div class="form-row"><label class="form-label">Cargo do entrevistado</label>'+
@@ -590,7 +647,7 @@ function rWizStep(){
         '<div class="form-row"><label class="form-label">Data da entrevista</label>'+
           '<input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div>'+
         '<div class="form-row"><label class="form-label">AN responsável</label>'+
-          '<input type="text" id="wiz-an" value="'+(WIZ.an||'')+'"></div>'+
+          '<select id="wiz-an" style="width:100%"><option value="">Selecione...</option>'+(window._rSelsOpts&&window._rSelsOpts.an||'')+'</select></div>'+
       '</div>'+
       '<div class="form-row"><label class="form-label">Descrição geral</label>'+
         '<textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
@@ -1466,6 +1523,8 @@ function ldDB() {
     DB.m5.kpis        = results[7].map(rowToKpi);
     DB.m5.lancamentos = results[8].map(rowToLanc);
     showLoadingOverlay(false);
+    return ldAdminDB();
+  }).then(function() {
     renderHome();
     rSels();
     setupRealtime();
@@ -1662,7 +1721,9 @@ function showDbError(msg) {
 function salvarM1Proj() {
   var n = document.getElementById('m1pn-nome').value.trim();
   if (!n) { alert('Informe o nome.'); return; }
-  var row = { nome: n, cliente: document.getElementById('m1pn-cli').value.trim(), an: document.getElementById('m1pn-an').value.trim(), descricao: document.getElementById('m1pn-desc').value.trim(), data: new Date().toLocaleDateString('pt-BR') };
+  var cliEl=document.getElementById('m1pn-cli'), anEl=document.getElementById('m1pn-an');
+  var cliVal=cliEl?cliEl.value.trim():'', anVal=anEl?anEl.value.trim():'';
+  var row = { nome: n, cliente: cliVal, an: anVal, descricao: document.getElementById('m1pn-desc').value.trim(), data: new Date().toLocaleDateString('pt-BR') };
   sbInsert('m1_projetos', row).then(function(rows) {
     DB.m1.projetos.push(rowToProj(rows[0]));
     cm('modal-m1-proj');
@@ -1854,7 +1915,7 @@ function salvarM5Op() {
       var pad = document.getElementById('m5on-pad').value;
       if (pad && KPI_P[pad]) {
         return Promise.all(KPI_P[pad].map(function(k) {
-          return sbInsert('m5_kpis', kpiToRow({ opId: op.id, nome: k.nome, sigla: k.sigla||'', unidade: k.un, meta: k.meta, tol: k.tol, dir: k.dir }))
+          return sbInsert('m5_kpis', kpiToRow({ opId: op.id, nome: k.nome, sigla: k.sigla||'', unidade: k.unidade||k.un||'%', meta: k.meta||0, tol: k.tol||0, dir: k.dir||'maior_melhor' }))
             .then(function(r) { DB.m5.kpis.push(rowToKpi(r[0])); });
         }));
       }
@@ -1912,6 +1973,280 @@ function importAll(evt) {
   };
   reader.readAsText(f);
 }
+
+/* ================================================
+   ADMIN — Cadastros de referência (página única)
+   ================================================ */
+
+var _adminCtx = { tipo: null, editId: null };
+var _pacKpis = [];
+var SEGMENTOS = ['BPO','Saúde','Financeiro','Varejo','Telecom','Governo','Educação','Tecnologia','Outro'];
+var CAT_SIS   = ['crm','telefonia','wfm','qualidade','bi','rpa','comunicacao','cliente','outro'];
+var CAT_SIS_L = {crm:'CRM',telefonia:'Telefonia/URA',wfm:'WFM',qualidade:'Qualidade',bi:'BI/Analytics',rpa:'RPA',comunicacao:'Comunicação',cliente:'Sistema cliente',outro:'Outro'};
+
+function ldAdminDB(){
+  return Promise.all([
+    sbSelect('admin_ans','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_clientes','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_sistemas','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_tipos_celula','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_perfis','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_kpi_pacotes','select=*&order=nome.asc&ativo=eq.true')
+  ]).then(function(results){
+    DB.admin.ans         = results[0];
+    DB.admin.clientes    = results[1];
+    DB.admin.sistemas    = results[2];
+    DB.admin.tiposCelula = results[3];
+    DB.admin.perfis      = results[4];
+    DB.admin.kpiPacotes  = results[5].map(function(r){
+      return {id:r.id,nome:r.nome,tipoCelula:r.tipo_celula,kpis:r.kpis||[],ativo:r.ativo};
+    });
+  });
+}
+
+var _currentAdminTab = 'ans';
+
+function switchAdminTab(tab, btnEl){
+  _currentAdminTab = tab;
+  document.querySelectorAll('.admin-tab').forEach(function(b){b.classList.remove('active');});
+  if(btnEl) btnEl.classList.add('active');
+  renderAdminTab(tab);
+}
+
+function renderAdmin(){
+  // Chamado pelo nav — renderiza a aba atual
+  renderAdminTab(_currentAdminTab);
+}
+
+function renderAdminTab(tab){
+  var el = document.getElementById('admin-tab-content');
+  if(!el) return;
+  var configs = {
+    ans:      {title:'Analistas de Negócios', arr:DB.admin.ans,         table:'admin_ans',         cols:['Nome','E-mail','Cargo'],         keys:['nome','email','cargo']},
+    clientes: {title:'Clientes',              arr:DB.admin.clientes,    table:'admin_clientes',    cols:['Nome','Segmento','Contato'],     keys:['nome','segmento','contato']},
+    sistemas: {title:'Sistemas corporativos', arr:DB.admin.sistemas,    table:'admin_sistemas',    cols:['Nome','Categoria','Descrição'],  keys:['nome','categoria','descricao']},
+    tipos:    {title:'Tipos de célula',       arr:DB.admin.tiposCelula, table:'admin_tipos_celula',cols:['Nome','Código'],                 keys:['nome','codigo']},
+    perfis:   {title:'Perfis de cargo',       arr:DB.admin.perfis,      table:'admin_perfis',      cols:['Nome','Tipo'],                   keys:['nome','tipo']},
+    kpi:      {title:'Pacotes de KPI',        arr:DB.admin.kpiPacotes,  table:'admin_kpi_pacotes', cols:['Nome','Tipo de célula','KPIs'],  keys:['nome','tipoCelula','_kpis']}
+  };
+  var cfg = configs[tab];
+  if(!cfg) return;
+
+  // Cabeçalho + botão "Nova linha" inline
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+    '<div style="font-size:15px;font-weight:600">' + cfg.title + ' <span style="font-size:13px;font-weight:400;color:var(--color-text-secondary)">(' + cfg.arr.length + ')</span></div>' +
+    '<button class="btn primary sm" onclick="showAdminInlineForm(\'' + tab + '\',null)"><i class="ti ti-plus"></i> Adicionar</button>' +
+  '</div>';
+
+  // Container do formulário inline (oculto por padrão)
+  html += '<div id="admin-inline-form" style="display:none"></div>';
+
+  // Tabela
+  if(!cfg.arr.length){
+    html += '<div class="empty-state"><i class="ti ti-database-off"></i><p>Nenhum cadastro ainda. Clique em Adicionar.</p></div>';
+  } else {
+    html += '<div class="card" style="padding:0;overflow:hidden"><table class="admin-table"><thead><tr>' +
+      cfg.cols.map(function(c){return '<th>'+c+'</th>';}).join('') +
+      '<th style="width:80px;text-align:right">Ações</th>' +
+      '</tr></thead><tbody>';
+    cfg.arr.forEach(function(item){
+      html += '<tr>';
+      cfg.keys.forEach(function(k){
+        if(k==='_kpis'){
+          var kpis = item.kpis||[];
+          html += '<td><div style="display:flex;gap:3px;flex-wrap:wrap">' +
+            kpis.slice(0,5).map(function(k2){return '<span style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);padding:1px 6px;border-radius:20px;font-size:10px">'+(k2.sigla||k2.nome)+'</span>';}).join('') +
+            (kpis.length>5?'<span style="font-size:10px;color:var(--color-text-secondary)">+'+( kpis.length-5)+'</span>':'') +
+          '</div></td>';
+        } else {
+          var val = item[k]||'—';
+          if(k==='categoria') val = CAT_SIS_L[val]||val;
+          html += '<td>' + val + '</td>';
+        }
+      });
+      html += '<td style="text-align:right;white-space:nowrap">' +
+        '<button class="btn sm" onclick="showAdminInlineForm(\'' + tab + '\',' + item.id + ')" title="Editar" style="margin-right:4px"><i class="ti ti-edit"></i></button>' +
+        '<button class="btn sm danger" onclick="delAdminItem(\'' + cfg.table + '\',' + item.id + ',\'' + tab + '\')" title="Excluir"><i class="ti ti-trash"></i></button>' +
+      '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  el.innerHTML = html;
+}
+
+/* Formulário inline */
+function showAdminInlineForm(tab, editId){
+  _adminCtx = {tipo:tab, editId:editId};
+  var item = null;
+  if(editId){
+    var arr = _getAdminArr(tab);
+    item = arr.find(function(x){return x.id===editId;});
+  }
+  _pacKpis = tab==='kpi' && item ? JSON.parse(JSON.stringify(item.kpis||[])) : [];
+  var formEl = document.getElementById('admin-inline-form');
+  if(!formEl) return;
+  formEl.style.display = 'block';
+  formEl.innerHTML = '<div class="admin-inline-form">' +
+    '<div style="font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">' +
+      '<i class="ti ti-'+(editId?'edit':'plus')+'" style="font-size:13px"></i> '+(editId?'Editando cadastro':'Novo cadastro') +
+    '</div>' +
+    _buildAdminFormFields(tab, item) +
+    (tab==='kpi'?'<div id="pac-kpis-area" style="margin-top:10px"><label class="form-label">KPIs do pacote</label><div id="pac-kpis-list"></div><button class="btn sm" onclick="addPacKpi()" style="margin-top:6px"><i class="ti ti-plus"></i> Adicionar KPI</button></div>':'') +
+    '<div style="display:flex;justify-content:space-between;margin-top:14px">' +
+      '<button class="btn sm" onclick="hideAdminForm()"><i class="ti ti-x"></i> Cancelar</button>' +
+      '<button class="btn primary" onclick="salvarAdminItem()"><i class="ti ti-check"></i> '+(editId?'Atualizar':'Salvar')+'</button>' +
+    '</div>' +
+  '</div>';
+  if(tab==='kpi') renderPacKpis();
+  // Scroll para o form
+  formEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function hideAdminForm(){
+  var el = document.getElementById('admin-inline-form');
+  if(el) el.style.display = 'none';
+}
+
+function _buildAdminFormFields(tab, item){
+  var s = 'padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%';
+  var i = item||{};
+  if(tab==='ans') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Nome completo" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">E-mail</label><input type="text" id="af-email" value="'+(i.email||'')+'" placeholder="email@callink.com.br" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Cargo</label><input type="text" id="af-cargo" value="'+(i.cargo||'')+'" placeholder="Ex: Analista Sênior" style="'+s+'"></div>' +
+    '</div>');
+  if(tab==='clientes') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Nome do cliente" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Segmento</label><select id="af-segmento" style="'+s+'">'+SEGMENTOS.map(function(sg){return '<option value="'+sg+'"'+(i.segmento===sg?' selected':'')+'>'+sg+'</option>';}).join('')+'</select></div>' +
+    '<div class="form-row"><label class="form-label">Contato</label><input type="text" id="af-contato" value="'+(i.contato||'')+'" placeholder="Nome do ponto focal" style="'+s+'"></div>' +
+    '</div>');
+  if(tab==='sistemas') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Genesys, Salesforce..." style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Categoria</label><select id="af-categoria" style="'+s+'">'+CAT_SIS.map(function(c){return '<option value="'+c+'"'+(i.categoria===c?' selected':'')+'>'+CAT_SIS_L[c]+'</option>';}).join('')+'</select></div>' +
+    '<div class="form-row"><label class="form-label">Descrição</label><input type="text" id="af-descricao" value="'+(i.descricao||'')+'" placeholder="Para que serve" style="'+s+'"></div>' +
+    '</div>');
+  if(tab==='tipos') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Atendimento Especializado" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Código</label><input type="text" id="af-codigo" value="'+(i.codigo||'')+'" placeholder="Ex: atend_esp (sem espaços)" style="'+s+'"></div>' +
+    '</div>');
+  if(tab==='perfis') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Analista de Retenção" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Tipo</label><select id="af-tipo" style="'+s+'">'+['operacional','liderança','qualidade','treinamento','staff'].map(function(t){return '<option value="'+t+'"'+(i.tipo===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>' +
+    '</div>');
+  if(tab==='kpi') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Atendimento Digital" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Tipo de célula</label><input type="text" id="af-tipo_celula" value="'+(i.tipoCelula||'')+'" placeholder="Ex: atendimento" style="'+s+'"></div>' +
+    '</div>');
+  return '';
+}
+
+function salvarAdminItem(){
+  var tab = _adminCtx.tipo;
+  var editId = _adminCtx.editId;
+  var nomeEl = document.getElementById('af-nome');
+  if(!nomeEl||!nomeEl.value.trim()){alert('Preencha o nome.');return;}
+  var data = {};
+  // Coletar todos os campos af-*
+  document.querySelectorAll('[id^="af-"]').forEach(function(el){
+    var key = el.id.replace('af-','');
+    data[key] = el.value.trim();
+  });
+  if(tab==='kpi') data.kpis = _pacKpis;
+  // Mapear chave tipoCelula → tipo_celula para o banco
+  if(data.tipo_celula !== undefined){ data.tipo_celula = data.tipo_celula; }
+  var table = _tabToTable(tab);
+  var promise = editId ? sbUpdate(table, editId, data) : sbInsert(table, data);
+  promise.then(function(rows){
+    var row = rows[0];
+    var arr = _getAdminArr(tab);
+    if(tab==='kpi'){
+      row = {id:row.id,nome:row.nome,tipoCelula:row.tipo_celula,kpis:row.kpis||[],ativo:row.ativo};
+    }
+    if(editId){
+      var idx = arr.findIndex(function(x){return x.id===editId;});
+      if(idx>=0) arr[idx]=row;
+    } else {
+      arr.push(row);
+    }
+    hideAdminForm();
+    renderAdminTab(tab);
+    rSels();
+  }).catch(function(e){alert('Erro: '+e.message);});
+}
+
+function delAdminItem(table, id, tab){
+  if(!confirm('Excluir?')) return;
+  sbUpdate(table, id, {ativo:false}).then(function(){
+    var arr = _getAdminArr(tab);
+    var idx = arr.findIndex(function(x){return x.id===id;});
+    if(idx>=0) arr.splice(idx,1);
+    renderAdminTab(tab);
+    rSels();
+  }).catch(function(e){alert('Erro: '+e.message);});
+}
+
+function _tabToTable(tab){
+  return {ans:'admin_ans',clientes:'admin_clientes',sistemas:'admin_sistemas',tipos:'admin_tipos_celula',perfis:'admin_perfis',kpi:'admin_kpi_pacotes'}[tab]||tab;
+}
+function _getAdminArr(tab){
+  return {ans:DB.admin.ans,clientes:DB.admin.clientes,sistemas:DB.admin.sistemas,tipos:DB.admin.tiposCelula,perfis:DB.admin.perfis,kpi:DB.admin.kpiPacotes}[tab]||[];
+}
+
+/* KPIs do pacote */
+function addPacKpi(){
+  _pacKpis.push({nome:'',sigla:'',unidade:'%',meta:0,tol:0,dir:'maior_melhor'});
+  renderPacKpis();
+}
+function renderPacKpis(){
+  var el=document.getElementById('pac-kpis-list'); if(!el)return;
+  var s='padding:5px 7px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px;width:100%';
+  el.innerHTML='<div style="display:grid;grid-template-columns:2fr 80px 60px 70px 70px 120px auto;gap:5px;margin-bottom:4px;font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px"><span>Nome</span><span>Sigla</span><span>Unid</span><span>Meta</span><span>Tol</span><span>Direção</span><span></span></div>'+
+  _pacKpis.map(function(k,i){
+    return '<div style="display:grid;grid-template-columns:2fr 80px 60px 70px 70px 120px auto;gap:5px;margin-bottom:5px;align-items:center">'+
+      '<input type="text" placeholder="Nome" value="'+(k.nome||'')+'" oninput="_pacKpis['+i+'].nome=this.value" style="'+s+'">'+
+      '<input type="text" placeholder="TMA" value="'+(k.sigla||'')+'" oninput="_pacKpis['+i+'].sigla=this.value" style="'+s+'">'+
+      '<input type="text" placeholder="%" value="'+(k.unidade||'%')+'" oninput="_pacKpis['+i+'].unidade=this.value" style="'+s+'">'+
+      '<input type="number" placeholder="0" value="'+(k.meta||0)+'" oninput="_pacKpis['+i+'].meta=parseFloat(this.value)||0" style="'+s+'">'+
+      '<input type="number" placeholder="0" value="'+(k.tol||0)+'" oninput="_pacKpis['+i+'].tol=parseFloat(this.value)||0" style="'+s+'">'+
+      '<select onchange="_pacKpis['+i+'].dir=this.value" style="'+s+'">'+
+        '<option value="maior_melhor"'+(k.dir==='maior_melhor'?' selected':'')+'>↑ Maior melhor</option>'+
+        '<option value="menor_melhor"'+(k.dir==='menor_melhor'?' selected':'')+'>↓ Menor melhor</option>'+
+      '</select>'+
+      '<button class="btn sm danger" onclick="_pacKpis.splice('+i+',1);renderPacKpis()"><i class="ti ti-x"></i></button>'+
+    '</div>';
+  }).join('');
+}
+
+/* Helpers selects */
+function adminOpts(arr,valueKey,labelKey,selectedVal){
+  return arr.map(function(item){
+    var v=item[valueKey||'id']!==undefined?item[valueKey||'id']:item;
+    var l=item[labelKey||'nome']!==undefined?item[labelKey||'nome']:item;
+    return '<option value="'+v+'"'+(String(selectedVal)===String(v)?' selected':'')+'>'+l+'</option>';
+  }).join('');
+}
+function adminOptsWithOther(arr,labelKey,selectedVal){
+  return adminOpts(arr,'nome',labelKey||'nome',selectedVal)+
+    '<option value="__outro__"'+(selectedVal==='__outro__'?' selected':'')+'>✏ Outro (digitar)...</option>';
+}
+
+// Funções legadas (compatibilidade)
+function openAdminModal(){}
+function salvarAdmin(){}
+function delAdmin(){}
+function editAdmin(){}
+function renderAdminAns(){ switchAdminTab('ans',null); }
+function renderAdminClientes(){ switchAdminTab('clientes',null); }
+function renderAdminSistemas(){ switchAdminTab('sistemas',null); }
+function renderAdminTipos(){ switchAdminTab('tipos',null); }
+function renderAdminPerfis(){ switchAdminTab('perfis',null); }
+function renderAdminKpi(){ switchAdminTab('kpi',null); }
 
 /* ===== INIT ===== */
 ldDB();renderHome();rSels();
