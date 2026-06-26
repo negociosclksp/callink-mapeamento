@@ -383,6 +383,7 @@ textarea{resize:vertical;min-height:60px}
     <button class="admin-tab" onclick="switchAdminTab('perfis',this)"><i class="ti ti-id-badge"></i> Perfis</button>
     <button class="admin-tab" onclick="switchAdminTab('cargos',this)"><i class="ti ti-briefcase"></i> Cargos</button>
     <button class="admin-tab" onclick="switchAdminTab('kpi',this)"><i class="ti ti-chart-bar"></i> Pacotes KPI</button>
+    <button class="admin-tab" onclick="switchAdminTab('ia',this)"><i class="ti ti-robot"></i> Config IA</button>
   </div>
   <!-- Conteúdo das abas -->
   <div id="admin-tab-content"></div>
@@ -602,7 +603,7 @@ function expAll(){dl(new Blob([JSON.stringify(DB,null,2)],{type:'application/jso
 
 /* ===== WIZARD ===== */
 /* ===== WIZARD M1 — ÁRVORE ===== */
-var WN=['Identificação','Fluxo AS IS','Sistemas','Volumes/SLA','Dores','Oportunidades','Revisão'];
+var WN=['Identificação','Fluxo AS IS','Volumes/SLA','Dores','Oportunidades','Revisão'];
 
 function mkNo(tipo){
   return {
@@ -709,57 +710,105 @@ function rWizStep(){
   }
   else if(s===1){ rWizStepFluxo(); }
   else if(s===2){
-    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-server"></i>Sistemas e ferramentas</div>'+
-      '<div id="wiz-sys-list"></div>'+
-      '<button class="btn sm" onclick="wizAddSys()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar sistema</button>'+
-      '<div class="divider"></div>'+
-      '<div class="form-row"><label class="form-label">Integração entre os sistemas?</label>'+
-        '<select id="wiz-integ"><option value="sim_auto"'+(WIZ.integTipo==='sim_auto'?' selected':'')+'>Sim, automática (API)</option>'+
-        '<option value="sim_manual"'+(WIZ.integTipo==='sim_manual'?' selected':'')+'>Sim, manual</option>'+
-        '<option value="nao"'+(WIZ.integTipo==='nao'?' selected':'')+'>Não há integração</option></select></div>'+
-      '<div class="form-row"><label class="form-label">Como os sistemas se comunicam?</label>'+
-        '<textarea id="wiz-integ-desc" placeholder="Ex: Agente copia do app e cola no CRM...">'+(WIZ.integDesc||'')+'</textarea></div>'+
-      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
-        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
-    rWizSys();
+    // Step Sistemas removido — redirecionar para próximo
+    WIZ.step=3; rWizStep(); return;
   }
   else if(s===3){
+    // Calcular TMA automático a partir dos nós do fluxo
+    var tmtTotal=0;
+    Object.values(WIZ.nos||{}).forEach(function(no){if(no.tmt) tmtTotal+=no.tmt;});
+    var tmtMin=Math.floor(tmtTotal/60), tmtSeg=tmtTotal%60;
+    var tmtStr=tmtTotal>0?(tmtMin>0?tmtMin+'min ':'')+(tmtSeg>0?tmtSeg+'seg':''):'Não calculado';
+    var volTipo=WIZ.volTipo||'diario';
     c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-chart-bar"></i>Volumes e SLAs</div>'+
       '<div class="form-grid">'+
-        '<div class="form-row"><label class="form-label">Volume médio diário</label><input type="number" id="wiz-vol" value="'+(WIZ.volume||'')+'" placeholder="Ex: 500"></div>'+
-        '<div class="form-row"><label class="form-label">TMA</label><input type="text" id="wiz-tma" value="'+(WIZ.tma||'')+'" placeholder="Ex: 8 min"></div>'+
-        '<div class="form-row"><label class="form-label">SLA contratual</label><input type="text" id="wiz-sla" value="'+(WIZ.sla||'')+'" placeholder="Ex: 95% em 30s"></div>'+
+        '<div class="form-row" style="grid-column:1/-1">'+
+          '<label class="form-label">Tipo de volume</label>'+
+          '<div style="display:flex;gap:8px">'+
+            '<button id="btn-vol-d" onclick="WIZ.volTipo=\'diario\';rWizStep()" class="btn'+(volTipo==='diario'?' primary':'')+'" style="flex:1">📅 Diário</button>'+
+            '<button id="btn-vol-m" onclick="WIZ.volTipo=\'mensal\';rWizStep()" class="btn'+(volTipo==='mensal'?' primary':'')+'" style="flex:1">📆 Mensal</button>'+
+          '</div>'+
+        '</div>'+
+        '<div class="form-row"><label class="form-label">Volume médio '+(volTipo==='mensal'?'mensal':'diário')+'</label>'+
+          '<input type="number" id="wiz-vol" value="'+(WIZ.volume||'')+'" placeholder="Ex: '+(volTipo==='mensal'?'15000':'500')+'"></div>'+
+        '<div class="form-row"><label class="form-label">SLA contratual</label>'+
+          '<input type="text" id="wiz-sla" value="'+(WIZ.sla||'')+'" placeholder="Ex: 95% em 30s"></div>'+
         '<div class="form-row"><label class="form-label">Performance vs SLA</label>'+
-          '<select id="wiz-perf"><option value="acima"'+(WIZ.performance==='acima'?' selected':'')+'>Acima</option>'+
-          '<option value="dentro"'+(WIZ.performance==='dentro'?' selected':'')+'>Dentro</option>'+
-          '<option value="abaixo"'+(WIZ.performance==='abaixo'?' selected':'')+'>Abaixo</option>'+
-          '<option value="nao_medido"'+(WIZ.performance==='nao_medido'?' selected':'')+'>Não medido</option></select></div>'+
-        '<div class="form-row"><label class="form-label">Equipe (qtd)</label><input type="number" id="wiz-equipe" value="'+(WIZ.equipe||'')+'"></div>'+
+          '<select id="wiz-perf">'+
+            '<option value="acima"'+(WIZ.performance==='acima'?' selected':'')+'>Acima</option>'+
+            '<option value="dentro"'+(WIZ.performance==='dentro'?' selected':'')+'>Dentro</option>'+
+            '<option value="abaixo"'+(WIZ.performance==='abaixo'?' selected':'')+'>Abaixo</option>'+
+            '<option value="nao_medido"'+(WIZ.performance==='nao_medido'?' selected':'')+'>Não medido</option>'+
+          '</select></div>'+
+        '<div class="form-row"><label class="form-label">Equipe (qtd)</label>'+
+          '<input type="number" id="wiz-equipe" value="'+(WIZ.equipe||'')+'"></div>'+
+        '<div class="form-row" style="grid-column:1/-1">'+
+          '<label class="form-label">TMA do processo</label>'+
+          '<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">'+
+            '<div style="flex:1">'+
+              '<div style="font-size:13px;font-weight:600">⏱ Calculado automaticamente: <span style="color:var(--accent)">'+tmtStr+'</span></div>'+
+              '<div style="font-size:11.5px;color:var(--color-text-secondary);margin-top:2px">Soma de todos os TMTs do fluxo AS IS ('+Object.keys(WIZ.nos||{}).length+' etapas)</div>'+
+            '</div>'+
+            '<div>'+
+              '<label style="font-size:11px;color:var(--color-text-secondary);display:block;margin-bottom:3px">Ajuste manual</label>'+
+              '<input type="text" id="wiz-tma" value="'+(WIZ.tma||tmtStr)+'" style="width:120px;padding:6px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
       '</div>'+
       '<div class="form-row"><label class="form-label">Sazonalidade</label>'+
         '<textarea id="wiz-sazon" placeholder="Picos de volume, variações...">'+(WIZ.sazonalidade||'')+'</textarea></div>'+
-      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
-        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+      '<div class="nav-btns">'+
+        '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+        '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button>'+
+      '</div></div>';
   }
   else if(s===4){
     c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div>'+
       '<div id="wiz-dor-list"></div>'+
-      '<button class="btn sm" onclick="wizAddDor()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button>'+
+      '<div id="wiz-dor-form" style="display:none;border:1px solid var(--color-border-tertiary);border-radius:8px;padding:12px;margin:8px 0;background:var(--color-background-secondary)">'+
+        '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;margin-bottom:8px">Nova dor</div>'+
+        '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start">'+
+          '<input type="text" id="wiz-dor-inp" placeholder="Descreva a dor ou problema..." style="padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%">'+
+          '<select id="wiz-dor-imp" style="padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+            '<option value="alto">🔴 Alto impacto</option>'+
+            '<option value="medio" selected>🟡 Médio impacto</option>'+
+            '<option value="baixo">🟢 Baixo impacto</option>'+
+          '</select>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;margin-top:8px">'+
+          '<button class="btn sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'none\'">Cancelar</button>'+
+          '<button class="btn primary sm" onclick="wizConfirmDor()"><i class="ti ti-check"></i> Adicionar</button>'+
+        '</div>'+
+      '</div>'+
+      '<button class="btn sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'block\';document.getElementById(\'wiz-dor-inp\').focus()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button>'+
       '<div class="divider"></div>'+
       '<div class="form-row"><label class="form-label">Principal dor na visão do gestor</label>'+
         '<textarea id="wiz-dor-p" placeholder="O gestor apontou como maior gargalo...">'+(WIZ.dorPrincipal||'')+'</textarea></div>'+
       '<div class="form-row"><label class="form-label">Retrabalho frequente?</label>'+
         '<textarea id="wiz-retrab" placeholder="Ex: Consulta 3 sistemas para um chamado...">'+(WIZ.retrabalho||'')+'</textarea></div>'+
-      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
-        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div></div>';
+      '<div class="nav-btns">'+
+        '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+        '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button>'+
+      '</div></div>';
     rWizDores();
   }
   else if(s===5){
+    var aiConf=DB.admin&&DB.admin.aiConfig||null;
     c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
+        '<button class="btn primary" onclick="wizAddOp()"><i class="ti ti-plus"></i> Adicionar manualmente</button>'+
+        '<button class="btn" onclick="wizAnalisarIA()" style="border-color:var(--accent);color:var(--accent)"><i class="ti ti-robot"></i> Analisar com IA</button>'+
+      '</div>'+
       '<div id="wiz-op-list"></div>'+
-      '<button class="btn sm" onclick="wizAddOp()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar oportunidade</button>'+
-      '<div class="nav-btns"><button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i></button>'+
-        '<button class="btn primary" onclick="wizNext()">Revisar <i class="ti ti-arrow-right"></i></button></div></div>';
+      '<div id="wiz-ia-result" style="display:none"></div>'+
+      '<div class="nav-btns">'+
+        '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
+        '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
+        '<button class="btn primary" onclick="wizNext()">Revisar <i class="ti ti-arrow-right"></i></button>'+
+      '</div></div>';
     rWizOps();
   }
   else if(s===6){
@@ -1087,6 +1136,15 @@ function rWizSys(){
     '</div>';
   }).join('');
 }
+function wizConfirmDor(){
+  var inp=document.getElementById('wiz-dor-inp');
+  var imp=document.getElementById('wiz-dor-imp');
+  if(!inp||!inp.value.trim()){alert('Descreva a dor.');return;}
+  WIZ.dores.push({descricao:inp.value.trim(),impacto:(imp?imp.value:'medio')});
+  document.getElementById('wiz-dor-form').style.display='none';
+  inp.value='';
+  rWizDores();
+}
 function wizAddDor(){WIZ.dores.push({descricao:'',impacto:'medio'});rWizDores();}
 function rWizDores(){
   var el=document.getElementById('wiz-dor-list');if(!el)return;
@@ -1193,7 +1251,15 @@ function wizSave2Step(){
   }
   if(WIZ.step===1){WIZ.perfis=((document.getElementById('wiz-perfis')||{}).value||'').trim();}
   if(WIZ.step===2){WIZ.integTipo=(document.getElementById('wiz-integ')||{}).value||'nao';WIZ.integDesc=((document.getElementById('wiz-integ-desc')||{}).value||'').trim();}
-  if(WIZ.step===3){WIZ.volume=((document.getElementById('wiz-vol')||{}).value||'');WIZ.tma=((document.getElementById('wiz-tma')||{}).value||'').trim();WIZ.sla=((document.getElementById('wiz-sla')||{}).value||'').trim();WIZ.performance=(document.getElementById('wiz-perf')||{}).value||'';WIZ.equipe=((document.getElementById('wiz-equipe')||{}).value||'');WIZ.sazonalidade=((document.getElementById('wiz-sazon')||{}).value||'').trim();}
+  if(WIZ.step===3){
+    WIZ.volume=((document.getElementById('wiz-vol')||{}).value||'');
+    WIZ.volTipo=WIZ.volTipo||'diario';
+    WIZ.tma=((document.getElementById('wiz-tma')||{}).value||'').trim();
+    WIZ.sla=((document.getElementById('wiz-sla')||{}).value||'').trim();
+    WIZ.performance=(document.getElementById('wiz-perf')||{}).value||'';
+    WIZ.equipe=((document.getElementById('wiz-equipe')||{}).value||'');
+    WIZ.sazonalidade=((document.getElementById('wiz-sazon')||{}).value||'').trim();
+  }
   if(WIZ.step===4){WIZ.dorPrincipal=((document.getElementById('wiz-dor-p')||{}).value||'').trim();WIZ.retrabalho=((document.getElementById('wiz-retrab')||{}).value||'').trim();}
 }
 function wizNext(){wizSave2Step();if(WIZ.step<6){WIZ.step++;rWizStep();}}
@@ -2195,7 +2261,8 @@ function ldAdminDB(){
     safeSelect('admin_tipos_celula'),
     safeSelect('admin_perfis'),
     safeSelect('admin_kpi_pacotes'),
-    safeSelect('admin_cargos')
+    safeSelect('admin_cargos'),
+    safeSelect('admin_ai_config')
   ]).then(function(results){
     DB.admin.ans         = results[0];
     DB.admin.clientes    = results[1];
@@ -2205,8 +2272,13 @@ function ldAdminDB(){
     DB.admin.kpiPacotes  = results[5].map(function(r){
       return {id:r.id,nome:r.nome,tipoCelula:r.tipo_celula,kpis:r.kpis||[],ativo:r.ativo};
     });
-    DB.admin.cargos = results[6];
-    console.log('Admin carregado — ANs:'+DB.admin.ans.length+' Clientes:'+DB.admin.clientes.length+' Sistemas:'+DB.admin.sistemas.length+' Perfis:'+DB.admin.perfis.length+' Cargos:'+DB.admin.cargos.length);
+    DB.admin.cargos   = results[6];
+    DB.admin.aiConfig = results[7];
+    // Se não há config salva, mostrar aviso no Admin para configurar
+    if(!DB.admin.aiConfig||!DB.admin.aiConfig.length){
+      DB.admin.aiConfig=[];
+    }
+    console.log('Admin carregado — ANs:'+DB.admin.ans.length+' Clientes:'+DB.admin.clientes.length);
   });
 }
 
@@ -2219,6 +2291,70 @@ function switchAdminTab(tab, btnEl){
   renderAdminTab(tab);
 }
 
+
+
+function _renderAdminIA(){
+  var el=document.getElementById('admin-tab-content');
+  if(!el)return;
+  var cfg=(DB.admin.aiConfig&&DB.admin.aiConfig[0])||{};
+  var s='padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%';
+  el.innerHTML=
+    '<div style="font-size:15px;font-weight:600;margin-bottom:16px">Configuração de IA</div>'+
+    '<div class="card" style="max-width:600px">'+
+      '<p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px">Configure uma IA para analisar automaticamente os processos mapeados e sugerir oportunidades de melhoria.</p>'+
+      '<div class="form-grid">'+
+        '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Provedor de IA</label>'+
+          '<select id="ai-prov" onchange="_toggleAIFields()" style="'+s+'">'+
+            '<option value="gemini"'+(cfg.provedor==='gemini'||!cfg.provedor?' selected':'')+'>Google Gemini (gratuito)</option>'+
+
+            '<option value="openai"'+(cfg.provedor==='openai'?' selected':'')+'>OpenAI (ChatGPT)</option>'+
+            '<option value="anthropic"'+(cfg.provedor==='anthropic'?' selected':'')+'>Anthropic (Claude API Key)</option>'+
+            '<option value="groq"'+(cfg.provedor==='groq'?' selected':'')+'>Groq (gratuito)</option>'+
+            '<option value="custom"'+(cfg.provedor==='custom'?' selected':'')+'>Personalizado</option>'+
+          '</select></div>'+
+        '<div class="form-row" style="grid-column:1/-1" id="ai-endpoint-row" style="display:'+(cfg.provedor==='custom'?'block':'none')+'">'+
+          '<label class="form-label">Endpoint da API</label>'+
+          '<input type="text" id="ai-endpoint" value="'+(cfg.endpoint||'')+'" placeholder="https://api.exemplo.com/v1/chat/completions" style="'+s+'"></div>'+
+        '<div class="form-row" id="ai-key-row" style="grid-column:1/-1"><label class="form-label">API Key *</label>'+
+          '<input type="password" id="ai-key" value="'+(cfg.api_key||'')+'" placeholder="sk-..." style="'+s+'"></div>'+
+        '<div id="ai-key-note" style="grid-column:1/-1;display:none;background:#dbeafe;border:1px solid #3b82f6;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#1d4ed8">'+
+          '<i class="ti ti-info-circle"></i> Claude via Claude.ai não requer API Key própria. Usa sua licença do claude.ai automaticamente.'+
+        '</div>'+
+        '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Modelo</label>'+
+          '<input type="text" id="ai-modelo" value="'+(cfg.modelo||'')+'" placeholder="gemini-1.5-flash / gpt-4o-mini / llama3-8b-8192" style="'+s+'"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:14px">'+
+        '<button class="btn primary" onclick="_salvarAIConfig()"><i class="ti ti-device-floppy"></i> Salvar configuração</button>'+
+      '</div>'+
+    '</div>';
+  setTimeout(function(){_toggleAIFields();},50);
+}
+
+function _toggleAIFields(){
+  var prov=(document.getElementById('ai-prov')||{}).value;
+  var row=document.getElementById('ai-endpoint-row');
+  if(row) row.style.display=prov==='custom'?'block':'none';
+  var keyRow=document.getElementById('ai-key-row');
+  if(keyRow) keyRow.style.display=prov==='claude_claudeai'?'none':'block';
+  var keyNote=document.getElementById('ai-key-note');
+  if(keyNote) keyNote.style.display=prov==='claude_claudeai'?'block':'none';
+}
+
+function _salvarAIConfig(){
+  var prov=(document.getElementById('ai-prov')||{}).value||'openai';
+  var key=(document.getElementById('ai-key')||{}).value||'';
+  var modelo=(document.getElementById('ai-modelo')||{}).value||'';
+  var endpoint=(document.getElementById('ai-endpoint')||{}).value||'';
+  if(!key){alert('Informe a API Key.');return;}
+  var cfg=DB.admin.aiConfig&&DB.admin.aiConfig[0];
+  var row={provedor:prov,api_key:key,modelo:modelo,endpoint:endpoint};
+  var promise=cfg?sbUpdate('admin_ai_config',cfg.id,row):sbInsert('admin_ai_config',row);
+  promise.then(function(rows){
+    if(!DB.admin.aiConfig) DB.admin.aiConfig=[];
+    if(cfg) DB.admin.aiConfig[0]=rows[0]; else DB.admin.aiConfig.push(rows[0]);
+    _showToast('Configuração de IA salva!',true);
+  }).catch(function(e){alert('Erro: '+e.message);});
+}
 
 function renderAdmin(){
   // Chamado pelo nav — renderiza a aba atual
@@ -2235,8 +2371,10 @@ function renderAdminTab(tab){
     tipos:    {title:'Tipos de célula',       arr:DB.admin.tiposCelula, table:'admin_tipos_celula',cols:['Nome','Código'],                 keys:['nome','codigo']},
     perfis:   {title:'Perfis de cargo',       arr:DB.admin.perfis,      table:'admin_perfis',      cols:['Nome','Tipo'],                   keys:['nome','tipo']},
     cargos:   {title:'Cargos',                arr:DB.admin.cargos,      table:'admin_cargos',      cols:['Nome','Nível'],                  keys:['nome','nivel']},
-    kpi:      {title:'Pacotes de KPI',        arr:DB.admin.kpiPacotes,  table:'admin_kpi_pacotes', cols:['Nome','Tipo de célula','KPIs'],  keys:['nome','tipoCelula','_kpis']}
+    kpi:      {title:'Pacotes de KPI',        arr:DB.admin.kpiPacotes,  table:'admin_kpi_pacotes', cols:['Nome','Tipo de célula','KPIs'],  keys:['nome','tipoCelula','_kpis']},
+    ia:       null  // handled separately
   };
+  if(tab==='ia'){ _renderAdminIA(); return; }
   var cfg = configs[tab];
   if(!cfg) return;
 
@@ -2405,7 +2543,7 @@ function delAdminItem(table, id, tab){
 }
 
 function _tabToTable(tab){
-  return {ans:'admin_ans',clientes:'admin_clientes',sistemas:'admin_sistemas',tipos:'admin_tipos_celula',perfis:'admin_perfis',cargos:'admin_cargos',kpi:'admin_kpi_pacotes'}[tab]||tab;
+  return {ans:'admin_ans',clientes:'admin_clientes',sistemas:'admin_sistemas',tipos:'admin_tipos_celula',perfis:'admin_perfis',cargos:'admin_cargos',kpi:'admin_kpi_pacotes',ia:'admin_ai_config'}[tab]||tab;
 }
 function _getAdminArr(tab){
   return {ans:DB.admin.ans,clientes:DB.admin.clientes,sistemas:DB.admin.sistemas,tipos:DB.admin.tiposCelula,perfis:DB.admin.perfis,cargos:DB.admin.cargos,kpi:DB.admin.kpiPacotes}[tab]||[];
@@ -2479,6 +2617,181 @@ function diagSupabase(){
 }
 window.diagSupabase = diagSupabase;
 
+
+/* ================================================
+   IA — Análise de oportunidades e dores
+   ================================================ */
+function wizAnalisarIA(){
+  var el=document.getElementById('wiz-ia-result');
+  if(!el)return;
+  // Buscar configuração da IA do admin
+  var aiCfg=DB.admin&&DB.admin.aiConfig&&DB.admin.aiConfig[0];
+  if(!aiCfg||!aiCfg.api_key){
+    el.style.display='block';
+    el.innerHTML='<div style="background:#fef3c7;border:1px solid #BA7517;border-radius:8px;padding:14px;margin-bottom:12px">'+
+      '<div style="font-weight:600;color:#92400e;margin-bottom:6px"><i class="ti ti-alert-triangle"></i> IA não configurada</div>'+
+      '<div style="font-size:13px;color:#92400e">Vá em <strong>Admin → Configuração de IA</strong> e cadastre a API Key para usar essa função.</div>'+
+    '</div>';
+    return;
+  }
+  el.style.display='block';
+  el.innerHTML='<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:14px;margin-bottom:12px">'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
+      '<div style="width:20px;height:20px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite"></div>'+
+      '<span style="font-size:13px;font-weight:500">Analisando o processo com IA...</span>'+
+    '</div>'+
+    '<div style="font-size:12px;color:var(--color-text-secondary)">Lendo o fluxo, dores e sistemas mapeados...</div>'+
+  '</div>';
+  // Montar contexto do processo para a IA
+  var nos=Object.values(WIZ.nos||{});
+  var fluxoTxt=nos.map(function(n,i){
+    return (i+1)+'. ['+(n.tipo==='decisao'?'DECISÃO':'ETAPA')+'] '+n.texto+
+      (n.responsavel?' ('+n.responsavel+')':'')+
+      (n.sistema?' [Sistema: '+n.sistema+']':'')+
+      (n.tmt?' [TMT: '+Math.floor(n.tmt/60)+'min'+( n.tmt%60>0?':'+n.tmt%60+'seg':'')+']':'');
+  }).join('\n');
+  var doresTxt=(WIZ.dores||[]).map(function(d){return '- '+d.descricao+' ['+d.impacto+']';}).join('\n');
+  var prompt='Você é um especialista em mapeamento de processos BPO (Business Process Outsourcing) da empresa Callink.\n\n'+
+    'Analise o processo abaixo e retorne um JSON com as seguintes informações:\n\n'+
+    '1. "oportunidades": array de objetos com {titulo, tipo (automacao|processo|tecnologia), esforco (baixo|medio|alto), impacto (baixo|medio|alto), descricao}\n'+
+    '2. "dores_identificadas": array de strings com dores adicionais identificadas no fluxo\n'+
+    '3. "score_automabilidade": número de 0 a 100 indicando o potencial de automação do processo\n'+
+    '4. "gargalos": array de strings com os principais gargalos identificados\n\n'+
+    'PROCESSO: '+WIZ.nome+'\n'+
+    'CLIENTE: '+(WIZ.cliente||'não informado')+'\n'+
+    'TIPO DE CÉLULA: '+(WIZ.tipo||'não informado')+'\n\n'+
+    'FLUXO AS IS:\n'+fluxoTxt+'\n\n'+
+    (doresTxt?'DORES JÁ IDENTIFICADAS:\n'+doresTxt+'\n\n':'')+
+    'DESCRIÇÃO: '+(WIZ.descricao||'não informada')+'\n\n'+
+    'Retorne APENAS o JSON, sem texto adicional.';
+  // Chamar API da IA configurada
+  var headers={'Content-Type':'application/json'};
+  var body={};
+  var apiUrl='';
+  var modelo=aiCfg.modelo||'';
+  if(aiCfg.provedor==='gemini'){
+    modelo=modelo||'gemini-1.5-flash';
+    apiUrl='https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+aiCfg.api_key;
+    headers={};  // Gemini usa key na URL, sem Authorization header
+    body={contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json'}};
+  } else if(aiCfg.provedor==='openai'||aiCfg.provedor==='chatgpt'){
+    modelo=modelo||'gpt-4o-mini';
+    apiUrl='https://api.openai.com/v1/chat/completions';
+    headers['Authorization']='Bearer '+aiCfg.api_key;
+    body={model:modelo,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}};
+  } else if(aiCfg.provedor==='anthropic'||aiCfg.provedor==='claude'){
+    modelo=modelo||'claude-haiku-4-5-20251001';
+    apiUrl='https://api.anthropic.com/v1/messages';
+    headers['x-api-key']=aiCfg.api_key;
+    headers['anthropic-version']='2023-06-01';
+    body={model:modelo,max_tokens:2000,messages:[{role:'user',content:prompt}]};
+  } else if(aiCfg.provedor==='groq'){
+    modelo=modelo||'llama3-8b-8192';
+    apiUrl='https://api.groq.com/openai/v1/chat/completions';
+    headers['Authorization']='Bearer '+aiCfg.api_key;
+    body={model:modelo,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}};
+  } else {
+    apiUrl=aiCfg.endpoint||'';
+    headers['Authorization']='Bearer '+aiCfg.api_key;
+    body={model:modelo||'gpt-4o-mini',messages:[{role:'user',content:prompt}]};
+  }
+  if(!apiUrl){
+    el.innerHTML='<div style="color:#991b1b;padding:10px">Endpoint da IA não configurado. Vá em Admin → Configuração de IA.</div>';
+    return;
+  }
+  fetch(apiUrl,{method:'POST',headers:headers,body:JSON.stringify(body)})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var text='';
+      if(data.candidates&&data.candidates[0]) text=data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text||'';
+      else if(data.choices&&data.choices[0]) text=data.choices[0].message&&data.choices[0].message.content||'';
+      else if(data.content&&data.content[0]) text=data.content[0].text||'';
+      var clean=text.replace(/```json|```/g,'').trim();
+      var result=JSON.parse(clean);
+      _renderIAResult(result);
+    })
+    .catch(function(e){
+      el.innerHTML='<div style="background:#fee2e2;border:1px solid #E24B4A;border-radius:8px;padding:14px;margin-bottom:12px">'+
+        '<div style="font-weight:600;color:#991b1b">Erro ao consultar IA</div>'+
+        '<div style="font-size:12px;color:#991b1b;margin-top:4px">'+e.message+'</div>'+
+      '</div>';
+    });
+}
+
+function _renderIAResult(result){
+  var el=document.getElementById('wiz-ia-result');
+  if(!el)return;
+  var ops=result.oportunidades||[];
+  var dores=result.dores_identificadas||[];
+  var score=result.score_automabilidade||0;
+  var gargalos=result.gargalos||[];
+  var scoreColor=score>=70?'#1D9E75':score>=40?'#EF9F27':'#E24B4A';
+  el.innerHTML=
+    '<div style="border:2px solid var(--accent);border-radius:10px;padding:16px;margin-bottom:12px">'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'+
+      '<i class="ti ti-robot" style="font-size:20px;color:var(--accent)"></i>'+
+      '<div style="flex:1"><div style="font-size:14px;font-weight:700">Análise da IA</div>'+
+        '<div style="font-size:12px;color:var(--color-text-secondary)">Revise e aceite as sugestões que fizerem sentido</div></div>'+
+      '<div style="text-align:center">'+
+        '<div style="font-size:24px;font-weight:700;color:'+scoreColor+'">'+score+'</div>'+
+        '<div style="font-size:10px;color:var(--color-text-secondary)">Score de<br>automação</div>'+
+      '</div>'+
+    '</div>'+
+    (gargalos.length?
+      '<div style="background:var(--color-background-secondary);border-radius:8px;padding:10px;margin-bottom:10px">'+
+        '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;margin-bottom:6px">⚡ Gargalos identificados</div>'+
+        gargalos.map(function(g){return '<div style="font-size:12.5px;padding:3px 0;border-bottom:1px solid var(--color-border-tertiary)">• '+g+'</div>';}).join('')+
+      '</div>':'')+
+    (dores.length?
+      '<div style="background:#fef3c7;border-radius:8px;padding:10px;margin-bottom:10px">'+
+        '<div style="font-size:11px;font-weight:600;color:#92400e;text-transform:uppercase;margin-bottom:6px">😣 Dores adicionais identificadas</div>'+
+        dores.map(function(d,i){return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0">'+
+          '<span style="font-size:12.5px;flex:1">'+d+'</span>'+
+          '<button class="btn sm" onclick="_aceitarDoreIA('+i+')" style="font-size:11px">+ Aceitar</button>'+
+        '</div>';}).join('')+
+      '</div>':'')+
+    '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;margin-bottom:8px">💡 Oportunidades sugeridas ('+ops.length+')</div>'+
+    ops.map(function(o,i){
+      var cl=classify(o);
+      return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px;margin-bottom:6px">'+
+        '<div style="display:flex;align-items:flex-start;gap:8px">'+
+          '<div style="flex:1">'+
+            '<div style="font-size:13px;font-weight:600">'+o.titulo+'</div>'+
+            '<div style="font-size:12px;color:var(--color-text-secondary);margin-top:2px">'+o.descricao+'</div>'+
+            '<div style="display:flex;gap:6px;margin-top:6px">'+
+              '<span class="badge '+(cl==='quick_win'?'b-green':cl==='automacao'?'b-blue':'b-gray')+'">'+clL[cl]+'</span>'+
+              '<span style="font-size:10px;background:var(--color-background-secondary);padding:2px 8px;border-radius:20px">Esforço: '+o.esforco+'</span>'+
+              '<span style="font-size:10px;background:var(--color-background-secondary);padding:2px 8px;border-radius:20px">Impacto: '+o.impacto+'</span>'+
+            '</div>'+
+          '</div>'+
+          '<button class="btn sm primary" onclick="_aceitarOpIA('+i+')" style="flex-shrink:0">✓ Aceitar</button>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+    '</div>';
+  window._iaOps=ops;
+  window._iaDores=dores;
+}
+
+function _aceitarOpIA(i){
+  var o=window._iaOps&&window._iaOps[i];
+  if(!o)return;
+  o.classificacao=classify(o);
+  WIZ.oportunidades.push(o);
+  window._iaOps.splice(i,1);
+  rWizOps();
+  _renderIAResult({oportunidades:window._iaOps,dores_identificadas:window._iaDores,score_automabilidade:0,gargalos:[]});
+  _showToast('Oportunidade adicionada!',true);
+}
+
+function _aceitarDoreIA(i){
+  var d=window._iaDores&&window._iaDores[i];
+  if(!d)return;
+  WIZ.dores.push({descricao:d,impacto:'medio'});
+  window._iaDores.splice(i,1);
+  _renderIAResult({oportunidades:window._iaOps,dores_identificadas:window._iaDores,score_automabilidade:0,gargalos:[]});
+  _showToast('Dor adicionada!',true);
+}
 
 /* ===== INIT ===== */
 ldDB();renderHome();rSels();
