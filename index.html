@@ -1188,16 +1188,19 @@ function wizConfirmDor(){
 function wizAddDor(){WIZ.dores.push({descricao:'',impacto:'medio'});rWizDores();}
 function rWizDores(){
   var el=document.getElementById('wiz-dor-list');if(!el)return;
-  if(!WIZ.dores.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma dor.</p>';return;}
+  if(!WIZ.dores.length){el.innerHTML='';return;}
+  var impIcon={alto:'🔴',medio:'🟡',baixo:'🟢'};
   el.innerHTML=WIZ.dores.map(function(d,i){
-    return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;margin-bottom:8px">'+
-      '<input type="text" placeholder="Descreva a dor..." value="'+d.descricao.replace(/"/g,'&quot;')+'" oninput="WIZ.dores['+i+'].descricao=this.value" id="wiz-dor-inp-'+i+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<select onchange="WIZ.dores['+i+'].impacto=this.value" style="width:100px;padding:6px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-        '<option value="alto"'+(d.impacto==='alto'?' selected':'')+'>Alto</option>'+
-        '<option value="medio"'+(d.impacto==='medio'?' selected':'')+'>Médio</option>'+
-        '<option value="baixo"'+(d.impacto==='baixo'?' selected':'')+'>Baixo</option>'+
-      '</select>'+
-      '<button class="btn sm danger" onclick="WIZ.dores.splice('+i+',1);rWizDores()"><i class="ti ti-x"></i></button>'+
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--color-border-tertiary);border-radius:8px;margin-bottom:6px;background:var(--color-background-primary)">'+
+      '<span style="font-size:16px">'+(impIcon[d.impacto]||'🟡')+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:13px;font-weight:500;color:var(--color-text-primary)">'+d.descricao+'</div>'+
+        '<div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px">'+
+          'Impacto: '+(d.impacto||'médio')+
+          (d.frequencia?' · Frequência: '+d.frequencia:'')+
+        '</div>'+
+      '</div>'+
+      '<button class="btn sm danger" onclick="WIZ.dores.splice('+i+',1);rWizDores()" title="Remover"><i class="ti ti-trash"></i></button>'+
     '</div>';
   }).join('');
 }
@@ -1249,11 +1252,13 @@ function wizMostrarSeletorIA(){
   if(!el||!opEl)return;
   // Listar IAs configuradas
   var ias=[];
-  var cfg=DB.admin&&DB.admin.aiConfig;
-  if(cfg&&cfg.length&&cfg[0].api_key){
-    var nomes={gemini:'Google Gemini',openai:'ChatGPT (OpenAI)',anthropic:'Claude (Anthropic)',groq:'Groq'};
-    ias.push({id:0,nome:nomes[cfg[0].provedor]||cfg[0].provedor,cfg:cfg[0]});
-  }
+  var cfgArr=DB.admin&&DB.admin.aiConfig||[];
+  var nomes={gemini:'Google Gemini ✨',openai:'ChatGPT (OpenAI)',anthropic:'Claude (Anthropic)',groq:'Groq (Llama)'};
+  cfgArr.forEach(function(c,i){
+    if(c.api_key) ias.push({id:i,nome:nomes[c.provedor]||c.provedor,modelo:c.modelo||'padrão',cfg:c});
+  });
+  // Debug
+  console.log('IAs disponíveis:', ias.length, DB.admin.aiConfig);
   if(!ias.length){
     opEl.innerHTML='<div style="font-size:13px;color:#991b1b">Nenhuma IA configurada. Vá em <strong>Admin → Config IA</strong>.</div>';
   } else {
@@ -1286,33 +1291,29 @@ function wizAnalisarIAComCfg(idx){
 function wizAddOp(){WIZ.oportunidades.push({titulo:'',descricao:'',tipo:'automacao',esforco:'baixo',impacto:'alto'});rWizOps();}
 function rWizOps(){
   var el=document.getElementById('wiz-op-list');if(!el)return;
-  if(!WIZ.oportunidades.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma oportunidade.</p>';return;}
+  if(!WIZ.oportunidades.length){el.innerHTML='<p style="font-size:12.5px;color:var(--color-text-secondary)">Nenhuma oportunidade registrada.</p>';return;}
   el.innerHTML=WIZ.oportunidades.map(function(o,i){
     var cl=classify(o);
-    return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px;margin-bottom:8px">'+
-      '<div style="display:flex;gap:6px;align-items:center;margin-bottom:7px">'+
-        '<span class="badge '+clC[cl]+'">'+clL[cl]+'</span>'+
-        '<button class="btn sm danger" onclick="WIZ.oportunidades.splice('+i+',1);rWizOps()" style="margin-left:auto"><i class="ti ti-x"></i></button>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px">'+
-        '<input type="text" placeholder="Título" value="'+o.titulo.replace(/"/g,'&quot;')+'" oninput="WIZ.oportunidades['+i+'].titulo=this.value" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-        '<select onchange="WIZ.oportunidades['+i+'].tipo=this.value" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="automacao"'+(o.tipo==='automacao'?' selected':'')+'>Automação</option>'+
-          '<option value="processo"'+(o.tipo==='processo'?' selected':'')+'>Processo</option>'+
-          '<option value="tecnologia"'+(o.tipo==='tecnologia'?' selected':'')+'>Tecnologia</option>'+
-        '</select>'+
-      '</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'+
-        '<select onchange="WIZ.oportunidades['+i+'].esforco=this.value;rWizOps()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="baixo"'+(o.esforco==='baixo'?' selected':'')+'>Esforço: Baixo</option>'+
-          '<option value="medio"'+(o.esforco==='medio'?' selected':'')+'>Esforço: Médio</option>'+
-          '<option value="alto"'+(o.esforco==='alto'?' selected':'')+'>Esforço: Alto</option>'+
-        '</select>'+
-        '<select onchange="WIZ.oportunidades['+i+'].impacto=this.value;rWizOps()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-          '<option value="alto"'+(o.impacto==='alto'?' selected':'')+'>Impacto: Alto</option>'+
-          '<option value="medio"'+(o.impacto==='medio'?' selected':'')+'>Impacto: Médio</option>'+
-          '<option value="baixo"'+(o.impacto==='baixo'?' selected':'')+'>Impacto: Baixo</option>'+
-        '</select>'+
+    var badge=clC[cl]||'b-gray';
+    var label=clL[cl]||cl;
+    var impMap={alto:'🔴 Alto',medio:'🟡 Médio',baixo:'🟢 Baixo'};
+    var esfMap={alto:'🔴 Alto',medio:'🟡 Médio',baixo:'🟢 Baixo'};
+    return '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:12px;margin-bottom:6px;background:var(--color-background-primary)">'+
+      '<div style="display:flex;align-items:flex-start;gap:10px">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+
+            '<span class="badge '+badge+'" style="font-size:10px">'+label+'</span>'+
+            '<span style="font-size:11px;color:var(--color-text-secondary)">'+o.tipo+'</span>'+
+          '</div>'+
+          '<div style="font-size:13px;font-weight:600;color:var(--color-text-primary)">'+o.titulo+'</div>'+
+          (o.descricao?'<div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px">'+o.descricao+'</div>':'')+
+          '<div style="display:flex;gap:8px;margin-top:6px;font-size:11px;color:var(--color-text-secondary)">'+
+            '<span>Esforço: '+(esfMap[o.esforco]||o.esforco)+'</span>'+
+            '<span>·</span>'+
+            '<span>Impacto: '+(impMap[o.impacto]||o.impacto)+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<button class="btn sm danger" onclick="WIZ.oportunidades.splice('+i+',1);rWizOps()" title="Remover"><i class="ti ti-trash"></i></button>'+
       '</div>'+
     '</div>';
   }).join('');
