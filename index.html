@@ -1605,13 +1605,7 @@ function sbUpsert(table, data) {
    ================================================ */
 function ldDB() {
   showLoadingOverlay(true);
-  // Teste rápido de conectividade
-  fetch(SB_URL + '/rest/v1/', { headers: { 'apikey': SB_KEY } })
-    .catch(function() {
-      showLoadingOverlay(false);
-      showDbError('Não foi possível conectar ao Supabase. Verifique se o projeto está ativo em supabase.com');
-      return;
-    });
+  // Conectividade verificada pelo Promise.all abaixo
   Promise.all([
     sbSelect('m1_projetos'),
     sbSelect('m1_processos'),
@@ -1633,15 +1627,25 @@ function ldDB() {
     DB.m5.kpis        = results[7].map(rowToKpi);
     DB.m5.lancamentos = results[8].map(rowToLanc);
     showLoadingOverlay(false);
-    return ldAdminDB();
+    renderHome(); rSels(); setupRealtime();
+    // Carregar admin separado para não bloquear se tabelas não existirem
+    return ldAdminDB().catch(function(e){
+      console.warn('Admin DB não carregado (execute supabase_admin.sql):', e.message);
+    });
   }).then(function() {
-    renderHome();
     rSels();
-    setupRealtime();
   }).catch(function(err) {
     console.error('Erro ao carregar dados:', err);
     showLoadingOverlay(false);
-    showDbError('Não foi possível conectar ao banco. Verifique a conexão.');
+    var msg = err && err.message ? err.message : String(err);
+    // Se for erro 404/42P01 (tabela não existe), dar dica
+    if(msg.indexOf('42P01')>=0||msg.indexOf('does not exist')>=0){
+      showDbError('Tabela não encontrada. Execute o SQL de configuração no Supabase. Detalhe: '+msg.substring(0,80));
+    } else if(msg.indexOf('fetch')>=0||msg.indexOf('network')>=0||msg.toLowerCase().indexOf('failed')>=0){
+      showDbError('Erro de rede. Verifique se o projeto Supabase está ativo em supabase.com/dashboard');
+    } else {
+      showDbError('Erro ao conectar: '+msg.substring(0,100));
+    }
   });
 }
 
