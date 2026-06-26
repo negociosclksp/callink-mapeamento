@@ -132,7 +132,7 @@ textarea{resize:vertical;min-height:60px}
 .ci-check.checked{background:var(--green);border-color:var(--green)}
 .sparkline-wrap{display:flex;align-items:flex-end;gap:2px;height:26px;margin-top:4px}
 .sparkline-bar{width:10px;border-radius:2px 2px 0 0;min-height:2px}
-.wiz-step{flex:1;padding:8px 4px;text-align:center;font-size:11px;font-weight:600;border-right:1px solid var(--border-light);cursor:default;transition:all .2s;letter-spacing:.2px}
+.wiz-step{flex:1;padding:10px 6px;text-align:center;font-size:11.5px;font-weight:600;transition:all .15s;user-select:none;white-space:nowrap}
 .wiz-step:last-child{border-right:none}
 .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;margin-right:3px}
 @media(max-width:768px){.sidebar{display:none}.grid4{grid-template-columns:repeat(2,1fr)}.home-module-grid{grid-template-columns:1fr 1fr}.kanban{grid-template-columns:1fr 1fr}}
@@ -628,11 +628,23 @@ function initWiz(){
 
 function rWizBar(){
   document.getElementById('wiz-bar').innerHTML=WN.map(function(n,i){
-    var bg=i<WIZ.step?'background:#dcfce7;color:#166534':
-           i===WIZ.step?'background:var(--accent);color:#fff':
-           'background:var(--color-background-secondary);color:var(--color-text-tertiary)';
-    return '<div class="wiz-step" style="'+bg+'">'+n+'</div>';
+    var isActive=i===WIZ.step;
+    var isDone=i<WIZ.step;
+    var style=isActive?
+      'background:var(--accent);color:#fff;border-bottom:3px solid var(--accent)':
+      isDone?
+      'background:transparent;color:#1D9E75;border-bottom:3px solid #1D9E75':
+      'background:transparent;color:var(--color-text-tertiary);border-bottom:3px solid transparent';
+    var icon=isDone?'<i class="ti ti-check" style="font-size:10px;margin-right:3px"></i>':'';
+    return '<div class="wiz-step" onclick="wizGoTo('+i+')" style="'+style+';cursor:pointer">'+icon+n+'</div>';
   }).join('');
+}
+
+function wizGoTo(step){
+  if(step===WIZ.step) return;
+  wizSave2Step();
+  WIZ.step=step;
+  rWizStep();
 }
 
 /* ---------- STEP 0: Identificação ---------- */
@@ -765,29 +777,46 @@ function rWizStep(){
       '</div></div>';
   }
   else if(s===4){
-    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div>'+
-      '<div id="wiz-dor-list"></div>'+
-      '<div id="wiz-dor-form" style="display:none;border:1px solid var(--color-border-tertiary);border-radius:8px;padding:12px;margin:8px 0;background:var(--color-background-secondary)">'+
-        '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;margin-bottom:8px">Nova dor</div>'+
-        '<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start">'+
-          '<input type="text" id="wiz-dor-inp" placeholder="Descreva a dor ou problema..." style="padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%">'+
-          '<select id="wiz-dor-imp" style="padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
-            '<option value="alto">🔴 Alto impacto</option>'+
-            '<option value="medio" selected>🟡 Médio impacto</option>'+
-            '<option value="baixo">🟢 Baixo impacto</option>'+
-          '</select>'+
-        '</div>'+
-        '<div style="display:flex;justify-content:space-between;margin-top:8px">'+
-          '<button class="btn sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'none\'">Cancelar</button>'+
-          '<button class="btn primary sm" onclick="wizConfirmDor()"><i class="ti ti-check"></i> Adicionar</button>'+
+    c.innerHTML=
+      '<div class="card">'+
+      '<div class="card-title"><i class="ti ti-mood-sad"></i>Dores e problemas</div>'+
+      '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:16px">Registre os problemas e dificuldades identificados no processo.</p>'+
+      '<div id="wiz-dor-list" style="margin-bottom:12px"></div>'+
+      '<div id="wiz-dor-form" style="display:none">'+
+        '<div style="border:2px solid var(--accent);border-radius:10px;padding:14px;background:var(--color-background-secondary);margin-bottom:12px">'+
+          '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px"><i class="ti ti-plus"></i> Nova dor identificada</div>'+
+          '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Descrição *</label>'+
+            '<textarea id="wiz-dor-inp" rows="2" placeholder="Descreva o problema ou dificuldade encontrada..." style="width:100%;padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;resize:vertical"></textarea></div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+
+            '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Impacto</label>'+
+              '<select id="wiz-dor-imp" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+                '<option value="alto">🔴 Alto</option>'+
+                '<option value="medio" selected>🟡 Médio</option>'+
+                '<option value="baixo">🟢 Baixo</option>'+
+              '</select></div>'+
+            '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Frequência</label>'+
+              '<select id="wiz-dor-freq" style="width:100%;padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
+                '<option value="sempre">Sempre</option>'+
+                '<option value="frequente">Frequente</option>'+
+                '<option value="ocasional" selected>Ocasional</option>'+
+                '<option value="raro">Raro</option>'+
+              '</select></div>'+
+          '</div>'+
+          '<div style="display:flex;justify-content:space-between">'+
+            '<button class="btn sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'none\'"><i class="ti ti-x"></i> Cancelar</button>'+
+            '<button class="btn primary" onclick="wizConfirmDor()"><i class="ti ti-check"></i> Adicionar dor</button>'+
+          '</div>'+
         '</div>'+
       '</div>'+
-      '<button class="btn sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'block\';document.getElementById(\'wiz-dor-inp\').focus()" style="margin:8px 0"><i class="ti ti-plus"></i> Adicionar dor</button>'+
+      '<button class="btn primary sm" onclick="document.getElementById(\'wiz-dor-form\').style.display=\'block\';setTimeout(function(){document.getElementById(\'wiz-dor-inp\').focus();},50)" style="margin-bottom:16px">'+
+        '<i class="ti ti-plus"></i> Adicionar dor</button>'+
       '<div class="divider"></div>'+
-      '<div class="form-row"><label class="form-label">Principal dor na visão do gestor</label>'+
-        '<textarea id="wiz-dor-p" placeholder="O gestor apontou como maior gargalo...">'+(WIZ.dorPrincipal||'')+'</textarea></div>'+
-      '<div class="form-row"><label class="form-label">Retrabalho frequente?</label>'+
-        '<textarea id="wiz-retrab" placeholder="Ex: Consulta 3 sistemas para um chamado...">'+(WIZ.retrabalho||'')+'</textarea></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">'+
+        '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Principal dor (visão do gestor)</label>'+
+          '<textarea id="wiz-dor-p" rows="3" placeholder="O gestor apontou como maior gargalo..." style="width:100%;padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;resize:vertical">'+(WIZ.dorPrincipal||'')+'</textarea></div>'+
+        '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Retrabalho frequente?</label>'+
+          '<textarea id="wiz-retrab" rows="3" placeholder="Ex: Consulta 3 sistemas para um chamado..." style="width:100%;padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;resize:vertical">'+(WIZ.retrabalho||'')+'</textarea></div>'+
+      '</div>'+
       '<div class="nav-btns">'+
         '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
         '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
@@ -796,13 +825,23 @@ function rWizStep(){
     rWizDores();
   }
   else if(s===5){
-    var aiConf=DB.admin&&DB.admin.aiConfig||null;
-    c.innerHTML='<div class="card"><div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'+
-        '<button class="btn primary" onclick="wizAddOp()"><i class="ti ti-plus"></i> Adicionar manualmente</button>'+
-        '<button class="btn" onclick="wizAnalisarIA()" style="border-color:var(--accent);color:var(--accent)"><i class="ti ti-robot"></i> Analisar com IA</button>'+
+    c.innerHTML=
+      '<div class="card">'+
+      '<div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div>'+
+      '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:16px">Registre oportunidades de melhoria ou use a IA para analisar o processo automaticamente.</p>'+
+      '<div id="wiz-op-list" style="margin-bottom:16px"></div>'+
+      '<div id="wiz-op-form" style="display:none"></div>'+
+      '<div style="display:flex;gap:8px;margin-bottom:16px">'+
+        '<button class="btn sm primary" onclick="wizAddOpInline()"><i class="ti ti-plus"></i> Adicionar manualmente</button>'+
+        '<button class="btn sm" onclick="wizMostrarSeletorIA()" style="border-color:var(--accent);color:var(--accent)"><i class="ti ti-robot"></i> Analisar com IA</button>'+
       '</div>'+
-      '<div id="wiz-op-list"></div>'+
+      '<div id="wiz-ia-seletor" style="display:none;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:10px;padding:14px;margin-bottom:12px">'+
+        '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Selecione a IA para analisar</div>'+
+        '<div id="wiz-ia-opcoes"></div>'+
+        '<div style="display:flex;justify-content:flex-end;margin-top:8px">'+
+          '<button class="btn sm" onclick="document.getElementById(\'wiz-ia-seletor\').style.display=\'none\'"><i class="ti ti-x"></i> Cancelar</button>'+
+        '</div>'+
+      '</div>'+
       '<div id="wiz-ia-result" style="display:none"></div>'+
       '<div class="nav-btns">'+
         '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
@@ -1139,8 +1178,9 @@ function rWizSys(){
 function wizConfirmDor(){
   var inp=document.getElementById('wiz-dor-inp');
   var imp=document.getElementById('wiz-dor-imp');
+  var freq=document.getElementById('wiz-dor-freq');
   if(!inp||!inp.value.trim()){alert('Descreva a dor.');return;}
-  WIZ.dores.push({descricao:inp.value.trim(),impacto:(imp?imp.value:'medio')});
+  WIZ.dores.push({descricao:inp.value.trim(),impacto:(imp?imp.value:'medio'),frequencia:(freq?freq.value:'ocasional')});
   document.getElementById('wiz-dor-form').style.display='none';
   inp.value='';
   rWizDores();
@@ -1161,6 +1201,88 @@ function rWizDores(){
     '</div>';
   }).join('');
 }
+
+function wizAddOpInline(){
+  var formEl=document.getElementById('wiz-op-form');
+  if(!formEl)return;
+  var s='padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%';
+  formEl.style.display='block';
+  formEl.innerHTML=
+    '<div style="border:2px solid var(--accent);border-radius:10px;padding:14px;background:var(--color-background-secondary);margin-bottom:12px">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px"><i class="ti ti-plus"></i> Nova oportunidade</div>'+
+    '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Título *</label>'+
+      '<input type="text" id="op-titulo" placeholder="Ex: Automatizar envio de e-mail de confirmação" style="'+s+'"></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Tipo</label>'+
+        '<select id="op-tipo" style="'+s+'"><option value="automacao">Automação</option><option value="processo">Processo</option><option value="tecnologia">Tecnologia</option></select></div>'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Esforço</label>'+
+        '<select id="op-esf" style="'+s+'"><option value="baixo">🟢 Baixo</option><option value="medio" selected>🟡 Médio</option><option value="alto">🔴 Alto</option></select></div>'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Impacto</label>'+
+        '<select id="op-imp" style="'+s+'"><option value="alto">🔴 Alto</option><option value="medio" selected>🟡 Médio</option><option value="baixo">🟢 Baixo</option></select></div>'+
+    '</div>'+
+    '<div style="margin-bottom:12px"><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Descrição</label>'+
+      '<textarea id="op-desc" rows="2" placeholder="Detalhe a oportunidade..." style="'+s+';resize:vertical"></textarea></div>'+
+    '<div style="display:flex;justify-content:space-between">'+
+      '<button class="btn sm" onclick="document.getElementById(\'wiz-op-form\').style.display=\'none\'"><i class="ti ti-x"></i> Cancelar</button>'+
+      '<button class="btn primary" onclick="wizConfirmOp()"><i class="ti ti-check"></i> Adicionar</button>'+
+    '</div>'+
+    '</div>';
+  setTimeout(function(){document.getElementById('op-titulo').focus();},50);
+}
+
+function wizConfirmOp(){
+  var titulo=(document.getElementById('op-titulo')||{}).value||'';
+  if(!titulo.trim()){alert('Informe o título.');return;}
+  var o={titulo:titulo.trim(),tipo:(document.getElementById('op-tipo')||{}).value||'automacao',
+    esforco:(document.getElementById('op-esf')||{}).value||'medio',
+    impacto:(document.getElementById('op-imp')||{}).value||'alto',
+    descricao:((document.getElementById('op-desc')||{}).value||'').trim()};
+  o.classificacao=classify(o);
+  WIZ.oportunidades.push(o);
+  document.getElementById('wiz-op-form').style.display='none';
+  rWizOps();
+}
+
+function wizMostrarSeletorIA(){
+  var el=document.getElementById('wiz-ia-seletor');
+  var opEl=document.getElementById('wiz-ia-opcoes');
+  if(!el||!opEl)return;
+  // Listar IAs configuradas
+  var ias=[];
+  var cfg=DB.admin&&DB.admin.aiConfig;
+  if(cfg&&cfg.length&&cfg[0].api_key){
+    var nomes={gemini:'Google Gemini',openai:'ChatGPT (OpenAI)',anthropic:'Claude (Anthropic)',groq:'Groq'};
+    ias.push({id:0,nome:nomes[cfg[0].provedor]||cfg[0].provedor,cfg:cfg[0]});
+  }
+  if(!ias.length){
+    opEl.innerHTML='<div style="font-size:13px;color:#991b1b">Nenhuma IA configurada. Vá em <strong>Admin → Config IA</strong>.</div>';
+  } else {
+    opEl.innerHTML=ias.map(function(ia,i){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border:1px solid var(--color-border-tertiary);border-radius:8px;margin-bottom:6px;background:var(--color-background-primary)">'+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:600">'+ia.nome+'</div>'+
+          '<div style="font-size:11px;color:var(--color-text-secondary)">'+ia.cfg.modelo||'modelo padrão'+'</div>'+
+        '</div>'+
+        '<button class="btn sm primary" onclick="wizAnalisarIAComCfg('+i+')"><i class="ti ti-robot"></i> Usar esta IA</button>'+
+      '</div>';
+    }).join('');
+    window._iasCfg=ias;
+  }
+  el.style.display='block';
+}
+
+function wizAnalisarIAComCfg(idx){
+  document.getElementById('wiz-ia-seletor').style.display='none';
+  var ias=window._iasCfg||[];
+  var ia=ias[idx];
+  if(!ia)return;
+  // Temporariamente usar esta config
+  var origCfg=DB.admin.aiConfig[0];
+  DB.admin.aiConfig[0]=ia.cfg;
+  wizAnalisarIA();
+  DB.admin.aiConfig[0]=origCfg;
+}
+
 function wizAddOp(){WIZ.oportunidades.push({titulo:'',descricao:'',tipo:'automacao',esforco:'baixo',impacto:'alto'});rWizOps();}
 function rWizOps(){
   var el=document.getElementById('wiz-op-list');if(!el)return;
@@ -1262,8 +1384,22 @@ function wizSave2Step(){
   }
   if(WIZ.step===4){WIZ.dorPrincipal=((document.getElementById('wiz-dor-p')||{}).value||'').trim();WIZ.retrabalho=((document.getElementById('wiz-retrab')||{}).value||'').trim();}
 }
-function wizNext(){wizSave2Step();if(WIZ.step<6){WIZ.step++;rWizStep();}}
-function wizPrev(){wizSave2Step();if(WIZ.step>0){WIZ.step--;rWizStep();}}
+function wizNext(){
+  wizSave2Step();
+  if(WIZ.step<WN.length-1){
+    WIZ.step++;
+    rWizStep();
+  }
+}
+function wizPrev(){
+  wizSave2Step();
+  if(WIZ.step>0){
+    WIZ.step--;
+    if(WIZ.step===2) WIZ.step--; // pular step Sistemas removido
+    if(WIZ.step<0) WIZ.step=0;
+    rWizStep();
+  }
+}
 
 function calcScore(d){
   var p=0;
@@ -2293,10 +2429,16 @@ function switchAdminTab(tab, btnEl){
 
 
 
+
+function _toggleKeyVis(){
+  var el=document.getElementById('ai-key');
+  if(el) el.type=el.type==='password'?'text':'password';
+}
 function _renderAdminIA(){
   var el=document.getElementById('admin-tab-content');
   if(!el)return;
   var cfg=(DB.admin.aiConfig&&DB.admin.aiConfig[0])||{};
+  console.log('AI Config:', cfg.provedor, cfg.modelo, cfg.api_key?'key='+cfg.api_key.substring(0,10)+'...':'NO KEY');
   var s='padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%';
   el.innerHTML=
     '<div style="font-size:15px;font-weight:600;margin-bottom:16px">Configuração de IA</div>'+
@@ -2316,7 +2458,12 @@ function _renderAdminIA(){
           '<label class="form-label">Endpoint da API</label>'+
           '<input type="text" id="ai-endpoint" value="'+(cfg.endpoint||'')+'" placeholder="https://api.exemplo.com/v1/chat/completions" style="'+s+'"></div>'+
         '<div class="form-row" id="ai-key-row" style="grid-column:1/-1"><label class="form-label">API Key *</label>'+
-          '<input type="password" id="ai-key" value="'+(cfg.api_key||'')+'" placeholder="sk-..." style="'+s+'"></div>'+
+          '<div style="position:relative">'+
+          '<input type="password" id="ai-key" value="'+(cfg.api_key||'')+'" placeholder="Cole aqui a API Key" style="'+s+'">'+
+          '<button type="button" onclick="_toggleKeyVis()" '+
+            'style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--color-text-secondary);font-size:13px">'+
+            '<i class="ti ti-eye"></i></button>'+
+          '</div></div>'+
         '<div id="ai-key-note" style="grid-column:1/-1;display:none;background:#dbeafe;border:1px solid #3b82f6;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#1d4ed8">'+
           '<i class="ti ti-info-circle"></i> Claude via Claude.ai não requer API Key própria. Usa sua licença do claude.ai automaticamente.'+
         '</div>'+
