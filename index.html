@@ -2399,7 +2399,7 @@ function ldAdminDB(){
     safeSelect('admin_perfis'),
     safeSelect('admin_kpi_pacotes'),
     safeSelect('admin_cargos'),
-    safeSelect('admin_ai_config')
+    sbSelect('admin_ai_config','select=*&order=id.asc').catch(function(e){console.warn('admin_ai_config:',e.message);return [];})
   ]).then(function(results){
     DB.admin.ans         = results[0];
     DB.admin.clientes    = results[1];
