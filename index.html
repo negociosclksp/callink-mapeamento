@@ -505,7 +505,7 @@ function semColor(s){return s==='v'?'#1D9E75':s==='a'?'#EF9F27':s==='r'?'#E24B4A
 
 
 function rSels(){
-  function sortAlfa(arr){ return arr.slice().sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');}); }
+  function sortAlfa(arr){var seen={};return arr.filter(function(x){var n=x.nome||x;if(seen[n])return false;seen[n]=true;return true;}).sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');})}
   var anArr=sortAlfa(DB.admin&&DB.admin.ans||[]);
   var cliArr=sortAlfa(DB.admin&&DB.admin.clientes||[]);
   var sisArr=sortAlfa(DB.admin&&DB.admin.sistemas||[]);
@@ -517,8 +517,7 @@ function rSels(){
   var tipoOpts=tcArr.map(function(t){return '<option value="'+(t.codigo||t.nome)+'">'+t.nome+'</option>';}).join('');
   var perfOpts='<option value="">Selecione...</option>'+pfArr.map(function(p){return '<option value="'+p.nome+'">'+p.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
   window._rSelsOpts={an:anOpts,cli:cliOpts,sis:sisOpts,tipo:tipoOpts,perf:perfOpts};
-  ['m1pn-cli'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=cliOpts;});
-  ['m1pn-an'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=anOpts;});
+  // m1pn-cli e m1pn-an são populados por _buildProjSelects() ao abrir o modal
   var kpiPacOpts='<option value="">Sem pacote</option>'+(DB.admin&&DB.admin.kpiPacotes||[]).map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
   var padEl=document.getElementById('m5on-pad');if(padEl)padEl.innerHTML=kpiPacOpts;
   var projOpts='<option value="">Selecione...</option>'+DB.m1.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
@@ -648,7 +647,12 @@ function rWizStep(){
     var cliOpts=(window._rSelsOpts&&window._rSelsOpts.cli)||'';
     var anOpts=(window._rSelsOpts&&window._rSelsOpts.an)||'';
     var perfisChecklist='';
-    var perfisArr=(DB.admin&&DB.admin.perfis||[]).slice().sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+    // Deduplicar por nome (caso o SQL de inicialização tenha sido executado mais de uma vez)
+    var _perfisVisto={};
+    var perfisArr=(DB.admin&&DB.admin.perfis||[]).filter(function(p){
+      if(_perfisVisto[p.nome]) return false;
+      _perfisVisto[p.nome]=true; return true;
+    }).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
     var selPerfis=WIZ.perfis?WIZ.perfis.split(',').map(function(x){return x.trim();}):[];
     if(perfisArr.length){
       perfisChecklist='<div class="form-row" style="grid-column:1/-1"><label class="form-label">Perfis envolvidos</label>'+
@@ -1144,18 +1148,37 @@ function wizUpdatePerfis(){
   var txt=document.getElementById('wiz-perfis-txt');
   if(txt) WIZ.perfis=txt.value;
 }
+function _showToast(msg, ok){
+  var el=document.createElement('div');
+  el.innerHTML=(ok?'<i class="ti ti-check"></i>':'<i class="ti ti-alert-circle"></i>')+' '+msg;
+  el.style.cssText='position:fixed;bottom:20px;right:20px;background:'+(ok?'#166534':'#991b1b')+';color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},2500);
+}
+
 function wizSalvarStep(){
-  // Salva etapa atual sem avançar
   wizSave2Step();
-  if(!WIZ._editId||!WIZ.projetoId) return; // só salva se já existe no banco
+  if(!WIZ.projetoId){_showToast('Selecione um projeto primeiro.',false);return;}
+  if(!WIZ.nome||!WIZ.nome.trim()){_showToast('Preencha o nome do processo.',false);return;}
+  WIZ.score=calcScore(WIZ);
   var row=procToRow(WIZ);
-  sbUpdate('m1_processos',WIZ._editId,row).then(function(){
-    var el=document.createElement('div');
-    el.textContent='✓ Salvo';
-    el.style.cssText='position:fixed;bottom:20px;right:20px;background:#166534;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;animation:fadeIn .2s ease';
-    document.body.appendChild(el);
-    setTimeout(function(){el.remove();},2000);
-  }).catch(function(e){alert('Erro ao salvar: '+e.message);});
+  if(WIZ._editId){
+    // Atualizar processo existente
+    sbUpdate('m1_processos',WIZ._editId,row).then(function(rows){
+      var saved=rowToProc(rows[0]);
+      var idx=DB.m1.processos.findIndex(function(p){return p.id===WIZ._editId;});
+      if(idx>=0) DB.m1.processos[idx]=saved;
+      _showToast('Processo atualizado!',true);
+    }).catch(function(e){_showToast('Erro: '+e.message,false);});
+  } else {
+    // Criar novo processo e guardar o ID
+    sbInsert('m1_processos',row).then(function(rows){
+      var saved=rowToProc(rows[0]);
+      DB.m1.processos.push(saved);
+      WIZ._editId=saved.id;
+      _showToast('Processo salvo! Pode continuar preenchendo.',true);
+    }).catch(function(e){_showToast('Erro: '+e.message,false);});
+  }
 }
 function wizSave2Step(){
   if(WIZ.step===0){
@@ -1858,7 +1881,7 @@ function salvarM1Proj() {
 
 function _buildProjSelects(p){
   // Gera options frescos direto do DB.admin (não depende do DOM pré-existente)
-  function sortAlfa(arr){return arr.slice().sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');});}
+  function sortAlfa(arr){var seen={};return arr.filter(function(x){var n=x.nome||x;if(seen[n])return false;seen[n]=true;return true;}).sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');});}
   var cliArr = sortAlfa(DB.admin&&DB.admin.clientes||[]);
   var anArr  = sortAlfa(DB.admin&&DB.admin.ans||[]);
   var cliSel = p?p.cliente||'':'';
@@ -2159,14 +2182,20 @@ var CAT_SIS   = ['crm','telefonia','wfm','qualidade','bi','rpa','comunicacao','c
 var CAT_SIS_L = {crm:'CRM',telefonia:'Telefonia/URA',wfm:'WFM',qualidade:'Qualidade',bi:'BI/Analytics',rpa:'RPA',comunicacao:'Comunicação',cliente:'Sistema cliente',outro:'Outro'};
 
 function ldAdminDB(){
+  function safeSelect(table){
+    return sbSelect(table,'select=*&order=nome.asc&ativo=eq.true').catch(function(e){
+      console.warn('Admin tabela nao encontrada: '+table, e.message);
+      return [];
+    });
+  }
   return Promise.all([
-    sbSelect('admin_ans','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_clientes','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_sistemas','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_tipos_celula','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_perfis','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_kpi_pacotes','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_cargos','select=*&order=nome.asc&ativo=eq.true')
+    safeSelect('admin_ans'),
+    safeSelect('admin_clientes'),
+    safeSelect('admin_sistemas'),
+    safeSelect('admin_tipos_celula'),
+    safeSelect('admin_perfis'),
+    safeSelect('admin_kpi_pacotes'),
+    safeSelect('admin_cargos')
   ]).then(function(results){
     DB.admin.ans         = results[0];
     DB.admin.clientes    = results[1];
@@ -2177,13 +2206,7 @@ function ldAdminDB(){
       return {id:r.id,nome:r.nome,tipoCelula:r.tipo_celula,kpis:r.kpis||[],ativo:r.ativo};
     });
     DB.admin.cargos = results[6];
-    console.log('Admin DB carregado:',
-      'ANs='+DB.admin.ans.length,
-      'Clientes='+DB.admin.clientes.length,
-      'Sistemas='+DB.admin.sistemas.length,
-      'Perfis='+DB.admin.perfis.length,
-      'Cargos='+DB.admin.cargos.length
-    );
+    console.log('Admin carregado — ANs:'+DB.admin.ans.length+' Clientes:'+DB.admin.clientes.length+' Sistemas:'+DB.admin.sistemas.length+' Perfis:'+DB.admin.perfis.length+' Cargos:'+DB.admin.cargos.length);
   });
 }
 
