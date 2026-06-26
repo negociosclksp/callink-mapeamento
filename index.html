@@ -443,7 +443,7 @@ textarea{resize:vertical;min-height:60px}
 </div><!-- /app -->
 
 <!-- MODALS -->
-<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title" id="m1pn-modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do projeto *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><select id="m1pn-cli" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">AN responsável</label><select id="m1pn-an" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m1pn-crit" style="width:100%"><option value="baixa">🟢 Baixa</option><option value="media" selected>🟡 Média</option><option value="alta">🟠 Alta</option><option value="critica">🔴 Crítica</option></select></div><div class="form-row"><label class="form-label">Data de início</label><input type="date" id="m1pn-data" style="width:100%"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
+<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title" id="m1pn-modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do projeto *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><select id="m1pn-cli" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">AN responsável</label><select id="m1pn-an" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m1pn-crit" style="width:100%"><option value="baixa">🟢 Baixa</option><option value="media" selected>🟡 Média</option><option value="alta">🟠 Alta</option><option value="critica">🔴 Crítica</option></select></div><div class="form-row"><label class="form-label">Data de início</label><input type="date" id="m1pn-data" style="width:100%"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" id="m1pn-btn-submit" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-sys"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-sys')">×</button><div class="modal-title">Cadastrar sistema</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m2sn-nome"></div><div class="form-row"><label class="form-label">Categoria</label><select id="m2sn-cat"><option value="crm">CRM</option><option value="telefonia">Telefonia</option><option value="wfm">WFM</option><option value="qualidade">Qualidade</option><option value="bi">BI</option><option value="rpa">RPA</option><option value="cliente">Sistema cliente</option><option value="outro">Outro</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m2sn-crit"><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div><div class="form-row"><label class="form-label">Operações</label><input type="text" id="m2sn-ops"></div></div><div class="form-row"><label class="form-label">Finalidade</label><textarea id="m2sn-fin"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-sys')">Cancelar</button><button class="btn primary" onclick="salvarM2Sys()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-integ"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-integ')">×</button><div class="modal-title">Nova integração</div><div class="form-grid"><div class="form-row"><label class="form-label">Origem *</label><select id="m2in-orig"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Destino *</label><select id="m2in-dest"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Tipo</label><select id="m2in-tipo"><option value="api">API automática</option><option value="manual">Manual</option><option value="arquivo">Arquivo</option><option value="webhook">Webhook</option><option value="nenhuma">Sem integração</option></select></div><div class="form-row"><label class="form-label">Operação</label><input type="text" id="m2in-op"></div></div><div class="form-row"><label class="form-label">Descrição</label><textarea id="m2in-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-integ')">Cancelar</button><button class="btn primary" onclick="salvarM2Integ()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m3-op"><div class="modal"><button class="close-btn" onclick="cm('modal-m3-op')">×</button><div class="modal-title">Nova oportunidade</div><div class="form-grid"><div class="form-row"><label class="form-label">Título *</label><input type="text" id="m3on-tit"></div><div class="form-row"><label class="form-label">Tipo</label><select id="m3on-tipo"><option value="automacao">Automação</option><option value="processo">Processo</option><option value="tecnologia">Tecnologia</option><option value="negocio">Negócio</option><option value="treinamento">Treinamento</option></select></div><div class="form-row"><label class="form-label">Esforço</label><select id="m3on-esf"><option value="baixo">Baixo</option><option value="medio">Médio</option><option value="alto">Alto</option></select></div><div class="form-row"><label class="form-label">Impacto</label><select id="m3on-imp"><option value="alto">Alto</option><option value="medio">Médio</option><option value="baixo">Baixo</option></select></div><div class="form-row"><label class="form-label">Responsável</label><input type="text" id="m3on-resp"></div><div class="form-row"><label class="form-label">Origem (processo)</label><input type="text" id="m3on-orig"></div></div><div class="form-row"><label class="form-label">Descrição / ganho esperado</label><textarea id="m3on-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m3-op')">Cancelar</button><button class="btn primary" onclick="salvarM3Op()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
@@ -1856,20 +1856,52 @@ function salvarM1Proj() {
   }).catch(function(e) { alert('Erro ao salvar: ' + e.message); });
 }
 
-function editM1Proj(id) {
-  var p = DB.m1.projetos.find(function(x){return x.id===id;});
-  if(!p) return;
-  window._m1pnEditId = id;
-  document.getElementById('m1pn-modal-title').textContent = 'Editar projeto';
-  document.getElementById('m1pn-nome').value = p.nome||'';
+function _buildProjSelects(p){
+  // Gera options frescos direto do DB.admin (não depende do DOM pré-existente)
+  function sortAlfa(arr){return arr.slice().sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');});}
+  var cliArr = sortAlfa(DB.admin&&DB.admin.clientes||[]);
+  var anArr  = sortAlfa(DB.admin&&DB.admin.ans||[]);
+  var cliSel = p?p.cliente||'':'';
+  var anSel  = p?p.an||'':'';
+  var cliOpts = '<option value="">Selecione...</option>' +
+    cliArr.map(function(c){return '<option value="'+c.nome+'"'+(c.nome===cliSel?' selected':'')+'>'+c.nome+'</option>';}).join('') +
+    '<option value="__outro__"'+('__outro__'===cliSel?' selected':'')+'>✏ Outro...</option>';
+  var anOpts = '<option value="">Selecione...</option>' +
+    anArr.map(function(a){return '<option value="'+a.nome+'"'+(a.nome===anSel?' selected':'')+'>'+a.nome+(a.cargo?' ('+a.cargo+')':'')+'</option>';}).join('') +
+    '<option value="__outro__"'+('__outro__'===anSel?' selected':'')+'>✏ Outro...</option>';
   var cliEl=document.getElementById('m1pn-cli');
-  if(cliEl) { rSels(); setTimeout(function(){ cliEl.value=p.cliente||''; },50); }
-  var anEl=document.getElementById('m1pn-an');
-  if(anEl) setTimeout(function(){ anEl.value=p.an||''; },50);
-  var critEl=document.getElementById('m1pn-crit');
-  if(critEl) critEl.value=p.criticidade||'media';
-  var dataEl=document.getElementById('m1pn-data');
-  if(dataEl) dataEl.value=p.data||'';
+  var anEl =document.getElementById('m1pn-an');
+  if(cliEl) cliEl.innerHTML=cliOpts;
+  if(anEl)  anEl.innerHTML=anOpts;
+}
+
+function abrirModalProjeto(){
+  window._m1pnEditId=null;
+  var tit=document.getElementById('m1pn-modal-title');
+  if(tit) tit.textContent='Novo projeto de mapeamento';
+  var btn=document.querySelector('#modal-m1-proj .btn.primary');
+  if(btn) btn.textContent='✓ Criar';
+  var nomeEl=document.getElementById('m1pn-nome'); if(nomeEl) nomeEl.value='';
+  var dataEl=document.getElementById('m1pn-data'); if(dataEl) dataEl.value=new Date().toISOString().split('T')[0];
+  var critEl=document.getElementById('m1pn-crit'); if(critEl) critEl.value='media';
+  _buildProjSelects(null);
+  var btn=document.getElementById('m1pn-btn-submit');
+  if(btn) btn.innerHTML='<i class="ti ti-check"></i> Criar';
+  openModal('modal-m1-proj');
+}
+
+function editM1Proj(id){
+  var p=DB.m1.projetos.find(function(x){return x.id===id;});
+  if(!p) return;
+  window._m1pnEditId=id;
+  var tit=document.getElementById('m1pn-modal-title');
+  if(tit) tit.textContent='Editar projeto';
+  var nomeEl=document.getElementById('m1pn-nome'); if(nomeEl) nomeEl.value=p.nome||'';
+  var critEl=document.getElementById('m1pn-crit'); if(critEl) critEl.value=p.criticidade||'media';
+  var dataEl=document.getElementById('m1pn-data'); if(dataEl) dataEl.value=p.data||'';
+  _buildProjSelects(p);
+  var btn=document.getElementById('m1pn-btn-submit');
+  if(btn) btn.innerHTML='<i class="ti ti-device-floppy"></i> Salvar alterações';
   openModal('modal-m1-proj');
 }
 
@@ -2157,19 +2189,7 @@ function switchAdminTab(tab, btnEl){
   renderAdminTab(tab);
 }
 
-function abrirModalProjeto(){
-  window._m1pnEditId=null;
-  var titulo=document.getElementById('m1pn-modal-title');
-  if(titulo) titulo.textContent='Novo projeto de mapeamento';
-  var nomeEl=document.getElementById('m1pn-nome');
-  if(nomeEl) nomeEl.value='';
-  var dataEl=document.getElementById('m1pn-data');
-  if(dataEl) dataEl.value=new Date().toISOString().split('T')[0];
-  var critEl=document.getElementById('m1pn-crit');
-  if(critEl) critEl.value='media';
-  rSels();
-  openModal('modal-m1-proj');
-}
+
 function renderAdmin(){
   // Chamado pelo nav — renderiza a aba atual
   renderAdminTab(_currentAdminTab);
