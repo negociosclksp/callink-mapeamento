@@ -2786,47 +2786,30 @@ window.diagSupabase = diagSupabase;
 function wizAnalisarIA(){
   var el=document.getElementById('wiz-ia-result');
   if(!el)return;
-  // Buscar configuração da IA do admin
   var aiCfg=DB.admin&&DB.admin.aiConfig&&DB.admin.aiConfig[0];
   if(!aiCfg||!aiCfg.api_key){
-    el.style.display='block';
-    el.innerHTML='<div style="background:#fef3c7;border:1px solid #BA7517;border-radius:8px;padding:14px;margin-bottom:12px">'+
-      '<div style="font-weight:600;color:#92400e;margin-bottom:6px"><i class="ti ti-alert-triangle"></i> IA não configurada</div>'+
-      '<div style="font-size:13px;color:#92400e">Vá em <strong>Admin → Configuração de IA</strong> e cadastre a API Key para usar essa função.</div>'+
-    '</div>';
+    el.innerHTML='<div style="background:#fef3c7;border:1px solid #BA7517;border-radius:8px;padding:14px;margin-bottom:12px;font-size:13px;color:#92400e">'+
+      '<strong>IA não configurada.</strong> Vá em Admin → Config IA e salve uma API Key.</div>';
     return;
   }
-  el.style.display='block';
-  el.innerHTML='<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:14px;margin-bottom:12px">'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'+
-      '<div style="width:20px;height:20px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite"></div>'+
-      '<span style="font-size:13px;font-weight:500">Analisando o processo com IA...</span>'+
-    '</div>'+
-    '<div style="font-size:12px;color:var(--color-text-secondary)">Lendo o fluxo, dores e sistemas mapeados...</div>'+
+  el.innerHTML='<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">'+
+    '<div style="width:18px;height:18px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0"></div>'+
+    '<span style="font-size:13px">Analisando com '+aiCfg.provedor+'... aguarde.</span>'+
   '</div>';
-  // Montar contexto do processo para a IA
   var nos=Object.values(WIZ.nos||{});
   var fluxoTxt=nos.map(function(n,i){
-    return (i+1)+'. ['+(n.tipo==='decisao'?'DECISÃO':'ETAPA')+'] '+n.texto+
-      (n.responsavel?' ('+n.responsavel+')':'')+
-      (n.sistema?' [Sistema: '+n.sistema+']':'')+
-      (n.tmt?' [TMT: '+Math.floor(n.tmt/60)+'min'+( n.tmt%60>0?':'+n.tmt%60+'seg':'')+']':'');
+    return (i+1)+'. '+(n.tipo==='decisao'?'[DECISÃO] ':'')+n.texto+
+      (n.sistema?' ['+n.sistema+']':'')+
+      (n.tmt?' ['+Math.floor(n.tmt/60)+'min'+(n.tmt%60>0?':'+n.tmt%60+'s':'')+']':'');
   }).join('\n');
-  var doresTxt=(WIZ.dores||[]).map(function(d){return '- '+d.descricao+' ['+d.impacto+']';}).join('\n');
-  var prompt='Você é um especialista em mapeamento de processos BPO (Business Process Outsourcing) da empresa Callink.\n\n'+
-    'Analise o processo abaixo e retorne um JSON com as seguintes informações:\n\n'+
-    '1. "oportunidades": array de objetos com {titulo, tipo (automacao|processo|tecnologia), esforco (baixo|medio|alto), impacto (baixo|medio|alto), descricao}\n'+
-    '2. "dores_identificadas": array de strings com dores adicionais identificadas no fluxo\n'+
-    '3. "score_automabilidade": número de 0 a 100 indicando o potencial de automação do processo\n'+
-    '4. "gargalos": array de strings com os principais gargalos identificados\n\n'+
-    'PROCESSO: '+WIZ.nome+'\n'+
-    'CLIENTE: '+(WIZ.cliente||'não informado')+'\n'+
-    'TIPO DE CÉLULA: '+(WIZ.tipo||'não informado')+'\n\n'+
-    'FLUXO AS IS:\n'+fluxoTxt+'\n\n'+
-    (doresTxt?'DORES JÁ IDENTIFICADAS:\n'+doresTxt+'\n\n':'')+
-    'DESCRIÇÃO: '+(WIZ.descricao||'não informada')+'\n\n'+
-    'Retorne APENAS o JSON, sem texto adicional.';
-  // Chamar API da IA configurada
+  var doresTxt=(WIZ.dores||[]).map(function(d){return '- '+d.descricao;}).join('\n');
+  // Prompt mais curto e objetivo para evitar resposta truncada
+  var prompt='Analise este processo BPO e responda SOMENTE com JSON válido, sem markdown:\n\n'+
+    'Processo: '+WIZ.nome+'\nCliente: '+(WIZ.cliente||'N/A')+'\n\n'+
+    'Etapas:\n'+fluxoTxt+'\n\n'+
+    (doresTxt?'Dores:\n'+doresTxt+'\n\n':'')+
+    'Retorne EXATAMENTE este JSON (sem texto antes ou depois):\n'+
+    '{"score_automabilidade":0,"gargalos":["..."],"dores_identificadas":["..."],"oportunidades":[{"titulo":"...","tipo":"automacao","esforco":"medio","impacto":"alto","descricao":"..."}]}';
   var headers={'Content-Type':'application/json'};
   var body={};
   var apiUrl='';
@@ -2834,48 +2817,59 @@ function wizAnalisarIA(){
   if(aiCfg.provedor==='gemini'){
     modelo=modelo||'gemini-1.5-flash';
     apiUrl='https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+aiCfg.api_key;
-    headers={};  // Gemini usa key na URL, sem Authorization header
-    body={contents:[{parts:[{text:prompt}]}],generationConfig:{responseMimeType:'application/json'}};
+    headers={};
+    body={contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:1500}};
   } else if(aiCfg.provedor==='openai'||aiCfg.provedor==='chatgpt'){
     modelo=modelo||'gpt-4o-mini';
     apiUrl='https://api.openai.com/v1/chat/completions';
     headers['Authorization']='Bearer '+aiCfg.api_key;
-    body={model:modelo,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}};
-  } else if(aiCfg.provedor==='anthropic'||aiCfg.provedor==='claude'){
+    body={model:modelo,messages:[{role:'user',content:prompt}],max_tokens:1000,temperature:0.3};
+  } else if(aiCfg.provedor==='anthropic'){
     modelo=modelo||'claude-haiku-4-5-20251001';
     apiUrl='https://api.anthropic.com/v1/messages';
     headers['x-api-key']=aiCfg.api_key;
     headers['anthropic-version']='2023-06-01';
-    body={model:modelo,max_tokens:2000,messages:[{role:'user',content:prompt}]};
+    body={model:modelo,max_tokens:1000,messages:[{role:'user',content:prompt}]};
   } else if(aiCfg.provedor==='groq'){
     modelo=modelo||'llama3-8b-8192';
     apiUrl='https://api.groq.com/openai/v1/chat/completions';
     headers['Authorization']='Bearer '+aiCfg.api_key;
-    body={model:modelo,messages:[{role:'user',content:prompt}],response_format:{type:'json_object'}};
+    body={model:modelo,messages:[{role:'user',content:prompt}],max_tokens:1000,temperature:0.3};
   } else {
     apiUrl=aiCfg.endpoint||'';
     headers['Authorization']='Bearer '+aiCfg.api_key;
-    body={model:modelo||'gpt-4o-mini',messages:[{role:'user',content:prompt}]};
+    body={model:modelo||'gpt-4o-mini',messages:[{role:'user',content:prompt}],max_tokens:1000};
   }
-  if(!apiUrl){
-    el.innerHTML='<div style="color:#991b1b;padding:10px">Endpoint da IA não configurado. Vá em Admin → Configuração de IA.</div>';
-    return;
-  }
+  if(!apiUrl){el.innerHTML='<div style="color:#991b1b;padding:10px">Endpoint não configurado.</div>';return;}
   fetch(apiUrl,{method:'POST',headers:headers,body:JSON.stringify(body)})
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok) return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t.substring(0,200));});
+      return r.json();
+    })
     .then(function(data){
       var text='';
-      if(data.candidates&&data.candidates[0]) text=data.candidates[0].content&&data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text||'';
-      else if(data.choices&&data.choices[0]) text=data.choices[0].message&&data.choices[0].message.content||'';
-      else if(data.content&&data.content[0]) text=data.content[0].text||'';
+      if(data.candidates&&data.candidates[0]&&data.candidates[0].content)
+        text=data.candidates[0].content.parts&&data.candidates[0].content.parts[0]&&data.candidates[0].content.parts[0].text||'';
+      else if(data.choices&&data.choices[0])
+        text=data.choices[0].message&&data.choices[0].message.content||'';
+      else if(data.content&&data.content[0])
+        text=data.content[0].text||'';
+      console.log('Resposta IA (raw):', text.substring(0,200));
+      // Limpar markdown e extrair JSON
       var clean=text.replace(/```json|```/g,'').trim();
+      // Encontrar o JSON mesmo se houver texto antes/depois
+      var jsonStart=clean.indexOf('{');
+      var jsonEnd=clean.lastIndexOf('}');
+      if(jsonStart>=0&&jsonEnd>jsonStart) clean=clean.substring(jsonStart,jsonEnd+1);
       var result=JSON.parse(clean);
       _renderIAResult(result);
     })
     .catch(function(e){
+      console.error('Erro IA:', e);
       el.innerHTML='<div style="background:#fee2e2;border:1px solid #E24B4A;border-radius:8px;padding:14px;margin-bottom:12px">'+
-        '<div style="font-weight:600;color:#991b1b">Erro ao consultar IA</div>'+
-        '<div style="font-size:12px;color:#991b1b;margin-top:4px">'+e.message+'</div>'+
+        '<div style="font-weight:600;color:#991b1b;margin-bottom:4px">Erro ao consultar IA</div>'+
+        '<div style="font-size:12px;color:#991b1b">'+e.message+'</div>'+
+        '<div style="font-size:11px;color:#991b1b;margin-top:6px">Verifique a API Key em Admin → Config IA</div>'+
       '</div>';
     });
 }
