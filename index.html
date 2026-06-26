@@ -2177,6 +2177,13 @@ function ldAdminDB(){
       return {id:r.id,nome:r.nome,tipoCelula:r.tipo_celula,kpis:r.kpis||[],ativo:r.ativo};
     });
     DB.admin.cargos = results[6];
+    console.log('Admin DB carregado:',
+      'ANs='+DB.admin.ans.length,
+      'Clientes='+DB.admin.clientes.length,
+      'Sistemas='+DB.admin.sistemas.length,
+      'Perfis='+DB.admin.perfis.length,
+      'Cargos='+DB.admin.cargos.length
+    );
   });
 }
 
@@ -2431,6 +2438,24 @@ function renderAdminTipos(){ switchAdminTab('tipos',null); }
 function renderAdminPerfis(){ switchAdminTab('perfis',null); }
 function renderAdminCargos(){ switchAdminTab('cargos',null); }
 function renderAdminKpi(){ switchAdminTab('kpi',null); }
+
+/* ===== DIAGNÓSTICO ===== */
+function diagSupabase(){
+  console.log('=== DIAGNÓSTICO SUPABASE ===');
+  console.log('URL:', SB_URL);
+  console.log('KEY (primeiros 30):', SB_KEY.substring(0,30));
+  var tabelas = ['m1_projetos','admin_ans','admin_clientes','admin_sistemas','admin_tipos_celula','admin_perfis','admin_cargos','admin_kpi_pacotes'];
+  tabelas.forEach(function(t){
+    fetch(SB_URL+'/rest/v1/'+t+'?select=id&limit=1',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    }).then(function(r){
+      if(r.ok) r.json().then(function(d){ console.log('✓ '+t+': '+d.length+' registros'); });
+      else r.text().then(function(e){ console.error('✗ '+t+' (HTTP '+r.status+'): '+e.substring(0,100)); });
+    }).catch(function(e){ console.error('✗ '+t+' (FETCH ERROR): '+e.message); });
+  });
+}
+window.diagSupabase = diagSupabase;
+
 
 /* ===== INIT ===== */
 ldDB();renderHome();rSels();
