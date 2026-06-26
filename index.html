@@ -226,7 +226,7 @@ textarea{resize:vertical;min-height:60px}
 <!-- M1 PROJETOS -->
 <div class="view" id="view-m1-proj">
   <div class="page-header"><div class="page-title">Projetos de mapeamento</div><div class="page-sub">Cada operação ou cliente é um projeto independente</div></div>
-  <button class="btn primary" onclick="openModal('modal-m1-proj')" style="margin-bottom:14px"><i class="ti ti-plus"></i> Novo projeto</button>
+  <button class="btn primary" onclick="abrirModalProjeto()" style="margin-bottom:14px"><i class="ti ti-plus"></i> Novo projeto</button>
   <div id="m1-proj-list"></div>
 </div>
 
@@ -381,6 +381,7 @@ textarea{resize:vertical;min-height:60px}
     <button class="admin-tab" onclick="switchAdminTab('sistemas',this)"><i class="ti ti-server"></i> Sistemas</button>
     <button class="admin-tab" onclick="switchAdminTab('tipos',this)"><i class="ti ti-tag"></i> Tipos de célula</button>
     <button class="admin-tab" onclick="switchAdminTab('perfis',this)"><i class="ti ti-id-badge"></i> Perfis</button>
+    <button class="admin-tab" onclick="switchAdminTab('cargos',this)"><i class="ti ti-briefcase"></i> Cargos</button>
     <button class="admin-tab" onclick="switchAdminTab('kpi',this)"><i class="ti ti-chart-bar"></i> Pacotes KPI</button>
   </div>
   <!-- Conteúdo das abas -->
@@ -442,7 +443,7 @@ textarea{resize:vertical;min-height:60px}
 </div><!-- /app -->
 
 <!-- MODALS -->
-<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><select id="m1pn-cli" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">AN responsável</label><select id="m1pn-an" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Descrição</label><input type="text" id="m1pn-desc"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
+<div class="modal-overlay" id="modal-m1-proj"><div class="modal"><button class="close-btn" onclick="cm('modal-m1-proj')">×</button><div class="modal-title" id="m1pn-modal-title">Novo projeto de mapeamento</div><div class="form-grid"><div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do projeto *</label><input type="text" id="m1pn-nome" placeholder="Ex: Keeta — Aracaju"></div><div class="form-row"><label class="form-label">Cliente</label><select id="m1pn-cli" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">AN responsável</label><select id="m1pn-an" style="width:100%"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m1pn-crit" style="width:100%"><option value="baixa">🟢 Baixa</option><option value="media" selected>🟡 Média</option><option value="alta">🟠 Alta</option><option value="critica">🔴 Crítica</option></select></div><div class="form-row"><label class="form-label">Data de início</label><input type="date" id="m1pn-data" style="width:100%"></div></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m1-proj')">Cancelar</button><button class="btn primary" onclick="salvarM1Proj()"><i class="ti ti-check"></i> Criar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-sys"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-sys')">×</button><div class="modal-title">Cadastrar sistema</div><div class="form-grid"><div class="form-row"><label class="form-label">Nome *</label><input type="text" id="m2sn-nome"></div><div class="form-row"><label class="form-label">Categoria</label><select id="m2sn-cat"><option value="crm">CRM</option><option value="telefonia">Telefonia</option><option value="wfm">WFM</option><option value="qualidade">Qualidade</option><option value="bi">BI</option><option value="rpa">RPA</option><option value="cliente">Sistema cliente</option><option value="outro">Outro</option></select></div><div class="form-row"><label class="form-label">Criticidade</label><select id="m2sn-crit"><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div><div class="form-row"><label class="form-label">Operações</label><input type="text" id="m2sn-ops"></div></div><div class="form-row"><label class="form-label">Finalidade</label><textarea id="m2sn-fin"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-sys')">Cancelar</button><button class="btn primary" onclick="salvarM2Sys()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m2-integ"><div class="modal"><button class="close-btn" onclick="cm('modal-m2-integ')">×</button><div class="modal-title">Nova integração</div><div class="form-grid"><div class="form-row"><label class="form-label">Origem *</label><select id="m2in-orig"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Destino *</label><select id="m2in-dest"><option value="">Selecione...</option></select></div><div class="form-row"><label class="form-label">Tipo</label><select id="m2in-tipo"><option value="api">API automática</option><option value="manual">Manual</option><option value="arquivo">Arquivo</option><option value="webhook">Webhook</option><option value="nenhuma">Sem integração</option></select></div><div class="form-row"><label class="form-label">Operação</label><input type="text" id="m2in-op"></div></div><div class="form-row"><label class="form-label">Descrição</label><textarea id="m2in-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m2-integ')">Cancelar</button><button class="btn primary" onclick="salvarM2Integ()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
 <div class="modal-overlay" id="modal-m3-op"><div class="modal"><button class="close-btn" onclick="cm('modal-m3-op')">×</button><div class="modal-title">Nova oportunidade</div><div class="form-grid"><div class="form-row"><label class="form-label">Título *</label><input type="text" id="m3on-tit"></div><div class="form-row"><label class="form-label">Tipo</label><select id="m3on-tipo"><option value="automacao">Automação</option><option value="processo">Processo</option><option value="tecnologia">Tecnologia</option><option value="negocio">Negócio</option><option value="treinamento">Treinamento</option></select></div><div class="form-row"><label class="form-label">Esforço</label><select id="m3on-esf"><option value="baixo">Baixo</option><option value="medio">Médio</option><option value="alto">Alto</option></select></div><div class="form-row"><label class="form-label">Impacto</label><select id="m3on-imp"><option value="alto">Alto</option><option value="medio">Médio</option><option value="baixo">Baixo</option></select></div><div class="form-row"><label class="form-label">Responsável</label><input type="text" id="m3on-resp"></div><div class="form-row"><label class="form-label">Origem (processo)</label><input type="text" id="m3on-orig"></div></div><div class="form-row"><label class="form-label">Descrição / ganho esperado</label><textarea id="m3on-desc"></textarea></div><div class="nav-btns"><button class="btn" onclick="cm('modal-m3-op')">Cancelar</button><button class="btn primary" onclick="salvarM3Op()"><i class="ti ti-check"></i> Salvar</button></div></div></div>
@@ -472,7 +473,7 @@ textarea{resize:vertical;min-height:60px}
 })();
 
 /* ===== DB ===== */
-var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]},admin:{ans:[],clientes:[],sistemas:[],tiposCelula:[],perfis:[],kpiPacotes:[]}};
+var DB={m1:{projetos:[],processos:[]},m2:{sistemas:[],integracoes:[]},m3:{ops:[]},m4:{projetos:[]},m5:{operacoes:[],kpis:[],lancamentos:[]},admin:{ans:[],clientes:[],sistemas:[],tiposCelula:[],perfis:[],kpiPacotes:[],cargos:[]}};
 var WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:null,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
 var M3DET=null;
 
@@ -504,25 +505,22 @@ function semColor(s){return s==='v'?'#1D9E75':s==='a'?'#EF9F27':s==='r'?'#E24B4A
 
 
 function rSels(){
-  // Selects de AN
-  var anOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.ans||[]).map(function(a){return '<option value="'+a.nome+'">'+a.nome+(a.cargo?' ('+a.cargo+')':'')+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
-  // Selects de Cliente
-  var cliOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.clientes||[]).map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
-  // Selects de Sistema
-  var sisOpts='<option value="">Nenhum</option>'+(DB.admin&&DB.admin.sistemas||[]).map(function(s){return '<option value="'+s.nome+'">'+s.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
-  // Selects de Tipo célula
-  var tipoOpts=(DB.admin&&DB.admin.tiposCelula&&DB.admin.tiposCelula.length?DB.admin.tiposCelula:[{nome:'Atendimento (voz/chat/email)',codigo:'atendimento'},{nome:'Backoffice',codigo:'backoffice'},{nome:'Qualidade/Monitoria',codigo:'qualidade'},{nome:'Gestão/Supervisão',codigo:'gestao'},{nome:'Staff — Processos',codigo:'staff_proc'}]).map(function(t){return '<option value="'+(t.codigo||t.nome)+'">'+t.nome+'</option>';}).join('');
-  // Selects de Perfil
-  var perfOpts='<option value="">Selecione...</option>'+(DB.admin&&DB.admin.perfis||[]).map(function(p){return '<option value="'+p.nome+'">'+p.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
-  // Preencher selects no DOM
+  function sortAlfa(arr){ return arr.slice().sort(function(a,b){return (a.nome||a).localeCompare((b.nome||b),'pt');}); }
+  var anArr=sortAlfa(DB.admin&&DB.admin.ans||[]);
+  var cliArr=sortAlfa(DB.admin&&DB.admin.clientes||[]);
+  var sisArr=sortAlfa(DB.admin&&DB.admin.sistemas||[]);
+  var tcArr=(DB.admin&&DB.admin.tiposCelula&&DB.admin.tiposCelula.length)?sortAlfa(DB.admin.tiposCelula):[{nome:'Atendimento (voz/chat/email)',codigo:'atendimento'},{nome:'Backoffice',codigo:'backoffice'},{nome:'Qualidade/Monitoria',codigo:'qualidade'},{nome:'Gestão/Supervisão',codigo:'gestao'},{nome:'Staff — Processos',codigo:'staff_proc'}];
+  var pfArr=sortAlfa(DB.admin&&DB.admin.perfis||[]);
+  var anOpts='<option value="">Selecione...</option>'+anArr.map(function(a){return '<option value="'+a.nome+'">'+a.nome+(a.cargo?' ('+a.cargo+')':'')+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  var cliOpts='<option value="">Selecione...</option>'+cliArr.map(function(c){return '<option value="'+c.nome+'">'+c.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  var sisOpts='<option value="">Nenhum</option>'+sisArr.map(function(s){return '<option value="'+s.nome+'">'+s.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  var tipoOpts=tcArr.map(function(t){return '<option value="'+(t.codigo||t.nome)+'">'+t.nome+'</option>';}).join('');
+  var perfOpts='<option value="">Selecione...</option>'+pfArr.map(function(p){return '<option value="'+p.nome+'">'+p.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  window._rSelsOpts={an:anOpts,cli:cliOpts,sis:sisOpts,tipo:tipoOpts,perf:perfOpts};
   ['m1pn-cli'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=cliOpts;});
   ['m1pn-an'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=anOpts;});
-  // Salvar opts globais para uso nos wizards
-  window._rSelsOpts={an:anOpts,cli:cliOpts,sis:sisOpts,tipo:tipoOpts,perf:perfOpts};
-  // KPI pacotes para M5
   var kpiPacOpts='<option value="">Sem pacote</option>'+(DB.admin&&DB.admin.kpiPacotes||[]).map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
   var padEl=document.getElementById('m5on-pad');if(padEl)padEl.innerHTML=kpiPacOpts;
-  // Projeto select
   var projOpts='<option value="">Selecione...</option>'+DB.m1.projetos.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
   ['m5l-op','m4in-proj'].forEach(function(id){var el=document.getElementById(id);if(el)el.innerHTML=projOpts;});
 }
@@ -540,7 +538,34 @@ function renderHome(){
 
 /* ===== M1 ===== */
 
-function renderM1Proj(){var el=document.getElementById('m1-proj-list');if(!DB.m1.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto. Crie o primeiro.</p></div>';return;}el.innerHTML=DB.m1.projetos.map(function(p){var cnt=DB.m1.processos.filter(function(x){return x.projetoId===p.id}).length;return '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:14px;font-weight:700">'+p.nome+'</div><div style="font-size:12px;color:var(--text-secondary);margin-top:2px">'+(p.cliente||'')+(p.an?' · AN: '+p.an:'')+(p.data?' · '+p.data:'')+'</div><div style="margin-top:6px"><span class="badge b-navy">'+cnt+' processo(s)</span></div></div><div style="display:flex;gap:6px"><button class="btn sm primary" onclick="goWizProj('+p.id+')"><i class="ti ti-plus"></i> Entrevista</button><button class="btn sm danger" onclick="delM1Proj('+p.id+')"><i class="ti ti-trash"></i></button></div></div>';}).join('');}
+function renderM1Proj(){
+  var el=document.getElementById('m1-proj-list');
+  if(!DB.m1.projetos.length){el.innerHTML='<div class="empty-state"><i class="ti ti-folder-off"></i><p>Nenhum projeto. Crie o primeiro.</p></div>';return;}
+  var CRIT={baixa:{icon:'🟢',label:'Baixa',color:'#166534'},media:{icon:'🟡',label:'Média',color:'#92400e'},alta:{icon:'🟠',label:'Alta',color:'#c2410c'},critica:{icon:'🔴',label:'Crítica',color:'#991b1b'}};
+  var sorted=DB.m1.projetos.slice().sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+  el.innerHTML=sorted.map(function(p){
+    var cnt=DB.m1.processos.filter(function(x){return x.projetoId===p.id;}).length;
+    var crit=CRIT[p.criticidade||'media']||CRIT.media;
+    return '<div class="card" style="display:flex;align-items:center;gap:14px">'+
+      '<div style="font-size:24px;flex-shrink:0" title="Criticidade: '+crit.label+'">'+crit.icon+'</div>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:15px;font-weight:700">'+p.nome+'</div>'+
+        '<div style="font-size:12px;color:var(--color-text-secondary);margin-top:3px">'+
+          (p.cliente||'')+(p.an?' · AN: '+p.an:'')+(p.data?' · '+p.data:'')+
+        '</div>'+
+        '<div style="margin-top:6px;display:flex;gap:6px;align-items:center">'+
+          '<span class="badge b-navy">'+cnt+' processo(s)</span>'+
+          '<span style="font-size:11px;font-weight:600;color:'+crit.color+'">'+crit.label+'</span>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;gap:6px;flex-shrink:0">'+
+        '<button class="btn sm primary" onclick="goWizProj('+p.id+')" title="Nova entrevista"><i class="ti ti-plus"></i> Entrevista</button>'+
+        '<button class="btn sm" onclick="editM1Proj('+p.id+')" title="Editar projeto"><i class="ti ti-edit"></i></button>'+
+        '<button class="btn sm danger" onclick="delM1Proj('+p.id+')" title="Excluir"><i class="ti ti-trash"></i></button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
 function goWizProj(id){
   WIZ={step:0,nos:{},raiz:null,sistemas:[],dores:[],oportunidades:[],_editId:null,projetoId:id,nome:'',tipo:'atendimento',responsavel:'',cargo:'',cliente:'',data:'',an:'',descricao:'',perfis:'',doc:'nao',integTipo:'nao',integDesc:'',volume:'',tma:'',sla:'',performance:'',equipe:'',sazonalidade:'',dorPrincipal:'',retrabalho:''};
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -615,44 +640,68 @@ function rWizStep(){
   var s=WIZ.step,c=document.getElementById('wiz-content');
   rWizBar();
   if(s===0){
-    var tipoOpts=['atendimento:Atendimento (voz/chat/email)','backoffice:Backoffice',
-      'qualidade:Qualidade/Monitoria','treinamento:Treinamento/Onboarding',
-      'gestao:Gestão/Supervisão','staff_ti:Staff — TI','staff_pcp:Staff — PCP',
-      'staff_qat:Staff — QA&T','staff_proc:Staff — Processos'];
-    var tipoOptHtml=tipoOpts.map(function(t){
-      var v=t.split(':')[0],l=t.split(':').slice(1).join(':');
-      return '<option value="'+v+'"'+(WIZ.tipo===v?' selected':'')+'>'+l+'</option>';
-    }).join('');
     var projNome=DB.m1.projetos.find(function(p){return p.id===WIZ.projetoId;});
     var projLabel=projNome?projNome.nome:'(projeto não selecionado)';
+    var projCli=projNome?projNome.cliente:'';
+    var projAn=projNome?projNome.an:'';
+    var tipoOpts=(window._rSelsOpts&&window._rSelsOpts.tipo)||'<option value="atendimento">Atendimento</option>';
+    var cliOpts=(window._rSelsOpts&&window._rSelsOpts.cli)||'';
+    var anOpts=(window._rSelsOpts&&window._rSelsOpts.an)||'';
+    var perfisChecklist='';
+    var perfisArr=(DB.admin&&DB.admin.perfis||[]).slice().sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+    var selPerfis=WIZ.perfis?WIZ.perfis.split(',').map(function(x){return x.trim();}):[];
+    if(perfisArr.length){
+      perfisChecklist='<div class="form-row" style="grid-column:1/-1"><label class="form-label">Perfis envolvidos</label>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary)">'+
+        perfisArr.map(function(pf){
+          var checked=selPerfis.indexOf(pf.nome)>=0?' checked':'';
+          return '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:4px 8px;border-radius:6px;background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary)">'+
+            '<input type="checkbox" value="'+pf.nome+'"'+checked+' onchange="wizUpdatePerfis()" style="cursor:pointer"> '+pf.nome+'</label>';
+        }).join('')+
+        '</div></div>';
+    } else {
+      perfisChecklist='<div class="form-row" style="grid-column:1/-1"><label class="form-label">Perfis envolvidos</label>'+
+        '<input type="text" id="wiz-perfis-txt" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor (cadastre perfis no Admin)"></div>';
+    }
+    var dataVal=WIZ.data||(new Date().toISOString().split('T')[0]);
     c.innerHTML=
       '<div class="card">'+
       '<div class="card-title"><i class="ti ti-id-badge"></i>Identificação do processo</div>'+
       '<div style="background:var(--color-background-secondary);border:1px solid var(--color-border-tertiary);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">'+
         '<i class="ti ti-folder" style="color:var(--color-text-secondary);font-size:15px"></i>'+
         '<div><div style="font-size:11px;color:var(--color-text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:.4px">Projeto</div>'+
-        '<div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">'+projLabel+'</div></div>'+
+        '<div style="font-size:14px;font-weight:700;color:var(--color-text-primary)">'+projLabel+'</div></div>'+
       '</div>'+
       '<div class="form-grid">'+
         '<div class="form-row" style="grid-column:1/-1"><label class="form-label">Nome do processo *</label>'+
           '<input type="text" id="wiz-nome" placeholder="Ex: Atendimento 1º nível — chat" value="'+(WIZ.nome||'')+'"></div>'+
         '<div class="form-row"><label class="form-label">Tipo de célula</label>'+
-          '<select id="wiz-tipo">'+(window._rSelsOpts&&window._rSelsOpts.tipo||tipoOptHtml)+'</select></div>'+
+          '<select id="wiz-tipo">'+tipoOpts+'</select></div>'+
         '<div class="form-row"><label class="form-label">Cliente</label>'+
-          '<select id="wiz-cliente" style="width:100%"><option value="">Selecione...</option>'+(window._rSelsOpts&&window._rSelsOpts.cli||'')+'</select></div>'+
+          '<select id="wiz-cliente"><option value="">Selecione...</option>'+cliOpts+'</select></div>'+
         '<div class="form-row"><label class="form-label">Nome do entrevistado</label>'+
-          '<input type="text" id="wiz-resp" placeholder="Nome" value="'+(WIZ.responsavel||'')+'"></div>'+
-        '<div class="form-row"><label class="form-label">Cargo do entrevistado</label>'+
-          '<input type="text" id="wiz-cargo" placeholder="Ex: Supervisor, Analista..." value="'+(WIZ.cargo||'')+'"></div>'+
+          '<input type="text" id="wiz-resp" value="'+(WIZ.responsavel||'')+'" placeholder="Nome completo"></div>'+
         '<div class="form-row"><label class="form-label">Data da entrevista</label>'+
-          '<input type="text" id="wiz-data" placeholder="DD/MM/AAAA" value="'+(WIZ.data||'')+'"></div>'+
+          '<input type="date" id="wiz-data" value="'+dataVal+'"></div>'+
         '<div class="form-row"><label class="form-label">AN responsável</label>'+
-          '<select id="wiz-an" style="width:100%"><option value="">Selecione...</option>'+(window._rSelsOpts&&window._rSelsOpts.an||'')+'</select></div>'+
+          '<select id="wiz-an"><option value="">Selecione...</option>'+anOpts+'</select></div>'+
+        perfisChecklist+
       '</div>'+
-      '<div class="form-row"><label class="form-label">Descrição geral</label>'+
-        '<textarea id="wiz-desc" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
-      '<div class="nav-btns"><button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button></div>'+
-      '</div>';
+      '<div class="form-row"><label class="form-label">Descrição geral do processo</label>'+
+        '<textarea id="wiz-desc" rows="3" placeholder="O que esse processo faz? Qual o objetivo principal?">'+(WIZ.descricao||'')+'</textarea></div>'+
+      '<div class="nav-btns">'+
+        '<button class="btn sm" onclick="wizSalvarStep()" style="margin-right:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
+        '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button>'+
+      '</div></div>';
+    // Pré-preencher selects do projeto
+    setTimeout(function(){
+      var cliEl=document.getElementById('wiz-cliente');
+      if(cliEl&&(WIZ.cliente||projCli)) cliEl.value=WIZ.cliente||projCli;
+      var anEl=document.getElementById('wiz-an');
+      if(anEl&&(WIZ.an||projAn)) anEl.value=WIZ.an||projAn;
+      var tipoEl=document.getElementById('wiz-tipo');
+      if(tipoEl&&WIZ.tipo) tipoEl.value=WIZ.tipo;
+    },30);
   }
   else if(s===1){ rWizStepFluxo(); }
   else if(s===2){
@@ -735,21 +784,17 @@ function rWizStepFluxo(){
   var nosCount=Object.keys(WIZ.nos||{}).length;
   c.innerHTML=
     '<div class="card">'+
-    '<div class="card-title"><i class="ti ti-git-branch"></i>Fluxo AS IS — Como é feito hoje</div>'+
+    '<div class="card-title"><i class="ti ti-map"></i>Mapear o processo atual</div>'+
     '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:14px">'+
       'Monte o fluxo como uma árvore. Cada etapa pode ter uma próxima (sequencial) ou dois caminhos (decisão: SIM / NÃO).'+
     '</p>'+
     '<div id="wiz-arvore" style="margin-bottom:12px"></div>'+
-    (nosCount===0?
-      '<button class="btn primary" onclick="wizAddRaiz()"><i class="ti ti-plus"></i> Adicionar primeira etapa</button>':
-      '')+
+    (nosCount===0?'<button class="btn primary" onclick="wizAddRaiz()"><i class="ti ti-plus"></i> Adicionar primeira etapa</button>':'')+
     '<div id="wiz-no-form" style="margin-top:10px"></div>'+
-    '<div class="divider"></div>'+
-    '<div class="form-row"><label class="form-label">Perfis envolvidos</label>'+
-      '<input type="text" id="wiz-perfis" value="'+(WIZ.perfis||'')+'" placeholder="Ex: Agente, Supervisor, Analista de QA"></div>'+
     '<div class="nav-btns">'+
       '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
       (nosCount>0?'<button class="btn" onclick="abrirFluxograma()"><i class="ti ti-hierarchy"></i> Ver fluxograma</button>':'')+
+      '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
       '<button class="btn primary" onclick="wizNext()">Próximo <i class="ti ti-arrow-right"></i></button>'+
     '</div></div>';
   rWizArvore();
@@ -771,7 +816,7 @@ function rWizNoHtml(noId,depth){
   var indent=depth*24;
   var sub=[no.responsavel,no.cargo,no.perfil].filter(Boolean).join(' / ');
   var subSis=no.sistema?'<span style="margin-left:8px"><i class="ti ti-server" style="font-size:10px"></i> '+no.sistema+'</span>':'';
-  var subTmt=no.tmt>0?'<span style="margin-left:8px"><i class="ti ti-clock" style="font-size:10px"></i> '+no.tmt+'min</span>':'';
+  var tmtStr=no.tmt>0?(Math.floor(no.tmt/60)+'min'+(no.tmt%60>0?':'+String(no.tmt%60).padStart(2,'0')+'seg':'')):'';var subTmt=tmtStr?'<span style="margin-left:8px"><i class="ti ti-clock" style="font-size:10px"></i> '+tmtStr+'</span>':'';
   var html=
     '<div style="margin-left:'+indent+'px;margin-bottom:6px">'+
     '<div style="border:1px solid var(--color-border-tertiary);border-radius:8px;padding:9px 12px;'+
@@ -895,44 +940,69 @@ function rWizFormNo(no){
   if(!el)return;
   var isDec=no&&no.tipo==='decisao';
   var isEdit=_wizAddCtx&&_wizAddCtx.campo==='edit';
+  var s='padding:8px 10px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%';
+  // Selects de sistema do admin
+  var sisOpts='<option value="">Nenhum</option>'+(DB.admin&&DB.admin.sistemas||[]).slice().sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');}).map(function(s2){return '<option value="'+s2.nome+'"'+(no&&no.sistema===s2.nome?' selected':'')+'>'+s2.nome+'</option>';}).join('')+'<option value="__outro__">✏ Outro...</option>';
+  // TMT: extrair min e seg do valor em segundos
+  var tmtTotal=no&&no.tmt?no.tmt:0;
+  var tmtMin=Math.floor(tmtTotal/60);
+  var tmtSeg=tmtTotal%60;
   el.innerHTML=
     '<div style="border:2px solid var(--accent);border-radius:10px;padding:14px;background:var(--color-background-secondary)">'+
-    '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">'+
+    '<div style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">'+
       '<i class="ti ti-'+(isEdit?'edit':'plus')+'" style="font-size:13px"></i> '+(isEdit?'Editando etapa':'Nova etapa')+
     '</div>'+
-    '<div style="margin-bottom:8px">'+
-      '<input type="text" id="wno-txt" placeholder="Descreva o que acontece nesta etapa..." value="'+(no?no.texto.replace(/"/g,'&quot;'):'')+'" '+
-        'style="width:100%;padding:7px 10px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:8px">'+
-      '<input type="text" id="wno-resp" placeholder="Nome do responsável" value="'+(no?no.responsavel.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wno-cargo" placeholder="Cargo" value="'+(no?no.cargo.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<input type="text" id="wno-perfil" placeholder="Perfil" value="'+(no?no.perfil.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 100px 150px;gap:7px;margin-bottom:10px">'+
-      '<input type="text" id="wno-sis" placeholder="Sistema utilizado" value="'+(no?no.sistema.replace(/"/g,'&quot;'):'')+'" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
-      '<div style="display:flex;align-items:center;gap:5px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);padding:0 8px">'+
-        '<input type="number" id="wno-tmt" placeholder="0" min="0" value="'+(no&&no.tmt>0?no.tmt:'')+'" style="width:36px;border:none;background:transparent;color:var(--color-text-primary);font-size:12px;padding:6px 0">'+
-        '<span style="font-size:10px;color:var(--color-text-secondary)">min TMT</span>'+
-      '</div>'+
-      '<select id="wno-tipo" onchange="rWizFormDecOpts()" style="padding:6px 9px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px">'+
+    // TIPO PRIMEIRO
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Tipo da etapa</label>'+
+      '<select id="wno-tipo" onchange="rWizFormDecOpts()" style="'+s+'">'+
         '<option value="sequencial"'+((!no||no.tipo==='sequencial')?' selected':'')+'>→ Sequencial</option>'+
-        '<option value="decisao"'+(no&&no.tipo==='decisao'?' selected':'')+'>◇ Decisão</option>'+
+        '<option value="decisao"'+(no&&no.tipo==='decisao'?' selected':'')+'>◇ Decisão / Bifurcação</option>'+
       '</select>'+
     '</div>'+
-    '<div id="wno-dec-opts" style="display:'+(isDec?'block':'none')+';background:var(--color-background-tertiary);border-radius:8px;padding:10px;margin-bottom:10px;border:1px solid var(--color-border-tertiary)">'+
+    // TEXTO
+    '<div style="margin-bottom:10px">'+
+      '<label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Descrição da etapa *</label>'+
+      '<input type="text" id="wno-txt" placeholder="O que acontece nesta etapa?" value="'+(no?no.texto.replace(/"/g,'&quot;'):'')+'" style="'+s+'">'+
+    '</div>'+
+    // RESPONSÁVEL + SISTEMA + TMT
+    '<div style="display:grid;grid-template-columns:1fr 1fr 140px;gap:8px;margin-bottom:10px">'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Responsável</label>'+
+        '<input type="text" id="wno-resp" placeholder="Nome do responsável" value="'+(no?no.responsavel.replace(/"/g,'&quot;'):'')+'" style="'+s+'"></div>'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">Sistema</label>'+
+        '<select id="wno-sis" style="'+s+'" onchange="rWizSisOther(this)">'+sisOpts+'</select></div>'+
+      '<div><label style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:5px">TMT (min:seg)</label>'+
+        '<div style="display:flex;gap:4px;align-items:center">'+
+          '<input type="number" id="wno-tmt-min" placeholder="0" min="0" value="'+tmtMin+'" style="padding:8px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%;text-align:center">'+
+          '<span style="font-size:12px;color:var(--color-text-secondary);flex-shrink:0">min</span>'+
+          '<input type="number" id="wno-tmt-seg" placeholder="0" min="0" max="59" value="'+tmtSeg+'" style="padding:8px;border:1px solid var(--color-border-secondary);border-radius:var(--radius-md);background:var(--color-background-primary);color:var(--color-text-primary);font-size:13px;width:100%;text-align:center">'+
+          '<span style="font-size:12px;color:var(--color-text-secondary);flex-shrink:0">seg</span>'+
+        '</div></div>'+
+    '</div>'+
+    '<div id="wno-sis-outro" style="display:none;margin-bottom:10px">'+
+      '<input type="text" id="wno-sis-txt" placeholder="Nome do sistema (será cadastrado)" style="'+s+'">'+
+      '<div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px">Este sistema será adicionado ao catálogo automaticamente.</div>'+
+    '</div>'+
+    // DECISÃO
+    '<div id="wno-dec-opts" style="display:'+(isDec?'block':'none')+';background:var(--color-background-tertiary,var(--color-background-primary));border-radius:8px;padding:12px;margin-bottom:10px;border:1px solid var(--color-border-secondary)">'+
+      '<div style="font-size:11px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Configurar decisão</div>'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-        '<div><label style="font-size:10px;font-weight:600;color:#166534;display:block;margin-bottom:3px">✓ Label SIM</label>'+
-          '<input type="text" id="wno-siml" value="'+(no?no.sim_label:'Sim')+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
-        '<div><label style="font-size:10px;font-weight:600;color:#991b1b;display:block;margin-bottom:3px">✗ Label NÃO</label>'+
-          '<input type="text" id="wno-naol" value="'+(no?no.nao_label:'Não')+'" style="width:100%;padding:5px 8px;border:1px solid var(--color-border-secondary);border-radius:6px;background:var(--color-background-primary);color:var(--color-text-primary);font-size:12px"></div>'+
+        '<div><label style="font-size:11px;font-weight:600;color:#166534;display:block;margin-bottom:4px">✓ Label SIM</label>'+
+          '<input type="text" id="wno-siml" value="'+(no?no.sim_label:'Sim')+'" style="'+s+'"></div>'+
+        '<div><label style="font-size:11px;font-weight:600;color:#991b1b;display:block;margin-bottom:4px">✗ Label NÃO</label>'+
+          '<input type="text" id="wno-naol" value="'+(no?no.nao_label:'Não')+'" style="'+s+'"></div>'+
       '</div>'+
     '</div>'+
-    '<div style="display:flex;justify-content:space-between">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center">'+
       '<button class="btn sm" onclick="wizCancelFormNo()"><i class="ti ti-x"></i> Cancelar</button>'+
       '<button class="btn primary" onclick="wizSalvarNo()"><i class="ti ti-check"></i> '+(isEdit?'Atualizar':'Adicionar')+'</button>'+
     '</div>'+
     '</div>';
+}
+
+function rWizSisOther(el){
+  var outro=document.getElementById('wno-sis-outro');
+  if(outro) outro.style.display=el.value==='__outro__'?'block':'none';
 }
 
 function rWizFormDecOpts(){
@@ -954,13 +1024,31 @@ function wizSalvarNo(){
     var tipo=(document.getElementById('wno-tipo')||{}).value||'sequencial';
     var isEdit=_wizAddCtx&&_wizAddCtx.campo==='edit';
     var no=isEdit?WIZ.nos[_wizAddCtx.editId]:mkNo(tipo);
+    if(!no){alert('Erro: nó não encontrado.');return;}
     no.texto=txt.trim();
     no.tipo=tipo;
     no.responsavel=((document.getElementById('wno-resp')||{}).value||'').trim();
-    no.cargo=((document.getElementById('wno-cargo')||{}).value||'').trim();
-    no.perfil=((document.getElementById('wno-perfil')||{}).value||'').trim();
-    no.sistema=((document.getElementById('wno-sis')||{}).value||'').trim();
-    no.tmt=parseInt((document.getElementById('wno-tmt')||{}).value)||0;
+    no.cargo='';
+    no.perfil='';
+    // Sistema: select ou campo livre
+    var sisEl=document.getElementById('wno-sis');
+    var sisTxt=document.getElementById('wno-sis-txt');
+    if(sisEl&&sisEl.value==='__outro__'&&sisTxt){
+      no.sistema=sisTxt.value.trim();
+      // Auto-cadastrar no banco se não existe
+      if(no.sistema&&!DB.admin.sistemas.some(function(s){return s.nome.toLowerCase()===no.sistema.toLowerCase();})){
+        sbInsert('admin_sistemas',{nome:no.sistema,categoria:'outro',descricao:''}).then(function(r){
+          DB.admin.sistemas.push(r[0]);
+          DB.admin.sistemas.sort(function(a,b){return a.nome.localeCompare(b.nome,'pt');});
+        }).catch(function(){});
+      }
+    } else {
+      no.sistema=sisEl?sisEl.value:'';
+    }
+    // TMT em segundos = min*60 + seg
+    var tmtMin=parseInt((document.getElementById('wno-tmt-min')||{}).value)||0;
+    var tmtSeg=parseInt((document.getElementById('wno-tmt-seg')||{}).value)||0;
+    no.tmt=tmtMin*60+tmtSeg;
     if(tipo==='decisao'){
       no.sim_label=(document.getElementById('wno-siml')||{}).value||'Sim';
       no.nao_label=(document.getElementById('wno-naol')||{}).value||'Não';
@@ -1047,16 +1135,38 @@ function rWizOps(){
 }
 
 /* ---------- Save ---------- */
+function wizUpdatePerfis(){
+  var checks=document.querySelectorAll('#wiz-content input[type=checkbox]:checked');
+  var vals=[];
+  checks.forEach(function(c){vals.push(c.value);});
+  WIZ.perfis=vals.join(', ');
+  // Se campo de texto livre
+  var txt=document.getElementById('wiz-perfis-txt');
+  if(txt) WIZ.perfis=txt.value;
+}
+function wizSalvarStep(){
+  // Salva etapa atual sem avançar
+  wizSave2Step();
+  if(!WIZ._editId||!WIZ.projetoId) return; // só salva se já existe no banco
+  var row=procToRow(WIZ);
+  sbUpdate('m1_processos',WIZ._editId,row).then(function(){
+    var el=document.createElement('div');
+    el.textContent='✓ Salvo';
+    el.style.cssText='position:fixed;bottom:20px;right:20px;background:#166534;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;animation:fadeIn .2s ease';
+    document.body.appendChild(el);
+    setTimeout(function(){el.remove();},2000);
+  }).catch(function(e){alert('Erro ao salvar: '+e.message);});
+}
 function wizSave2Step(){
   if(WIZ.step===0){
     WIZ.nome=((document.getElementById('wiz-nome')||{}).value||'').trim()||WIZ.nome||'';
     WIZ.tipo=(document.getElementById('wiz-tipo')||{}).value||WIZ.tipo||'atendimento';
     WIZ.responsavel=((document.getElementById('wiz-resp')||{}).value||'').trim();
-    WIZ.cargo=((document.getElementById('wiz-cargo')||{}).value||'').trim();
-    WIZ.cliente=((document.getElementById('wiz-cliente')||{}).value||'').trim();
-    WIZ.data=((document.getElementById('wiz-data')||{}).value||'').trim();
-    WIZ.an=((document.getElementById('wiz-an')||{}).value||'').trim();
+    WIZ.cliente=(document.getElementById('wiz-cliente')||{}).value||'';
+    WIZ.data=(document.getElementById('wiz-data')||{}).value||'';
+    WIZ.an=(document.getElementById('wiz-an')||{}).value||'';
     WIZ.descricao=((document.getElementById('wiz-desc')||{}).value||'').trim();
+    wizUpdatePerfis();
   }
   if(WIZ.step===1){WIZ.perfis=((document.getElementById('wiz-perfis')||{}).value||'').trim();}
   if(WIZ.step===2){WIZ.integTipo=(document.getElementById('wiz-integ')||{}).value||'nao';WIZ.integDesc=((document.getElementById('wiz-integ-desc')||{}).value||'').trim();}
@@ -1542,7 +1652,7 @@ function svDB() { /* no-op: saves happen per-operation */ }
    MAPEADORES: linha do banco → objeto JS local
    ================================================ */
 function rowToProj(r) {
-  return { id: r.id, nome: r.nome, cliente: r.cliente||'', an: r.an||'', desc: r.descricao||'', data: r.data||'' };
+  return { id: r.id, nome: r.nome, cliente: r.cliente||'', an: r.an||'', desc: r.descricao||'', data: r.data||'', criticidade: r.criticidade||'media' };
 }
 function rowToProc(r) {
   return {
@@ -1719,16 +1829,44 @@ function showDbError(msg) {
 
 /* M1 — Projetos */
 function salvarM1Proj() {
-  var n = document.getElementById('m1pn-nome').value.trim();
-  if (!n) { alert('Informe o nome.'); return; }
-  var cliEl=document.getElementById('m1pn-cli'), anEl=document.getElementById('m1pn-an');
-  var cliVal=cliEl?cliEl.value.trim():'', anVal=anEl?anEl.value.trim():'';
-  var row = { nome: n, cliente: cliVal, an: anVal, descricao: document.getElementById('m1pn-desc').value.trim(), data: new Date().toLocaleDateString('pt-BR') };
-  sbInsert('m1_projetos', row).then(function(rows) {
-    DB.m1.projetos.push(rowToProj(rows[0]));
+  var n = (document.getElementById('m1pn-nome')||{}).value.trim();
+  if (!n) { alert('Informe o nome do projeto.'); return; }
+  var cli = (document.getElementById('m1pn-cli')||{}).value||'';
+  var an  = (document.getElementById('m1pn-an')||{}).value||'';
+  var crit= (document.getElementById('m1pn-crit')||{}).value||'media';
+  var data= (document.getElementById('m1pn-data')||{}).value||'';
+  var editId = window._m1pnEditId||null;
+  var row = { nome: n, cliente: cli, an: an, criticidade: crit, data: data };
+  var promise = editId ? sbUpdate('m1_projetos', editId, row) : sbInsert('m1_projetos', row);
+  promise.then(function(rows) {
+    var saved = rowToProj(rows[0]);
+    if (editId) {
+      var idx = DB.m1.projetos.findIndex(function(p){return p.id===editId;});
+      if(idx>=0) DB.m1.projetos[idx]=saved;
+    } else {
+      DB.m1.projetos.push(saved);
+    }
+    window._m1pnEditId = null;
     cm('modal-m1-proj');
     renderM1Proj(); rSels();
   }).catch(function(e) { alert('Erro ao salvar: ' + e.message); });
+}
+
+function editM1Proj(id) {
+  var p = DB.m1.projetos.find(function(x){return x.id===id;});
+  if(!p) return;
+  window._m1pnEditId = id;
+  document.getElementById('m1pn-modal-title').textContent = 'Editar projeto';
+  document.getElementById('m1pn-nome').value = p.nome||'';
+  var cliEl=document.getElementById('m1pn-cli');
+  if(cliEl) { rSels(); setTimeout(function(){ cliEl.value=p.cliente||''; },50); }
+  var anEl=document.getElementById('m1pn-an');
+  if(anEl) setTimeout(function(){ anEl.value=p.an||''; },50);
+  var critEl=document.getElementById('m1pn-crit');
+  if(critEl) critEl.value=p.criticidade||'media';
+  var dataEl=document.getElementById('m1pn-data');
+  if(dataEl) dataEl.value=p.data||'';
+  openModal('modal-m1-proj');
 }
 
 function delM1Proj(id) {
@@ -1991,7 +2129,8 @@ function ldAdminDB(){
     sbSelect('admin_sistemas','select=*&order=nome.asc&ativo=eq.true'),
     sbSelect('admin_tipos_celula','select=*&order=nome.asc&ativo=eq.true'),
     sbSelect('admin_perfis','select=*&order=nome.asc&ativo=eq.true'),
-    sbSelect('admin_kpi_pacotes','select=*&order=nome.asc&ativo=eq.true')
+    sbSelect('admin_kpi_pacotes','select=*&order=nome.asc&ativo=eq.true'),
+    sbSelect('admin_cargos','select=*&order=nome.asc&ativo=eq.true')
   ]).then(function(results){
     DB.admin.ans         = results[0];
     DB.admin.clientes    = results[1];
@@ -2001,6 +2140,7 @@ function ldAdminDB(){
     DB.admin.kpiPacotes  = results[5].map(function(r){
       return {id:r.id,nome:r.nome,tipoCelula:r.tipo_celula,kpis:r.kpis||[],ativo:r.ativo};
     });
+    DB.admin.cargos = results[6];
   });
 }
 
@@ -2013,6 +2153,19 @@ function switchAdminTab(tab, btnEl){
   renderAdminTab(tab);
 }
 
+function abrirModalProjeto(){
+  window._m1pnEditId=null;
+  var titulo=document.getElementById('m1pn-modal-title');
+  if(titulo) titulo.textContent='Novo projeto de mapeamento';
+  var nomeEl=document.getElementById('m1pn-nome');
+  if(nomeEl) nomeEl.value='';
+  var dataEl=document.getElementById('m1pn-data');
+  if(dataEl) dataEl.value=new Date().toISOString().split('T')[0];
+  var critEl=document.getElementById('m1pn-crit');
+  if(critEl) critEl.value='media';
+  rSels();
+  openModal('modal-m1-proj');
+}
 function renderAdmin(){
   // Chamado pelo nav — renderiza a aba atual
   renderAdminTab(_currentAdminTab);
@@ -2027,6 +2180,7 @@ function renderAdminTab(tab){
     sistemas: {title:'Sistemas corporativos', arr:DB.admin.sistemas,    table:'admin_sistemas',    cols:['Nome','Categoria','Descrição'],  keys:['nome','categoria','descricao']},
     tipos:    {title:'Tipos de célula',       arr:DB.admin.tiposCelula, table:'admin_tipos_celula',cols:['Nome','Código'],                 keys:['nome','codigo']},
     perfis:   {title:'Perfis de cargo',       arr:DB.admin.perfis,      table:'admin_perfis',      cols:['Nome','Tipo'],                   keys:['nome','tipo']},
+    cargos:   {title:'Cargos',                arr:DB.admin.cargos,      table:'admin_cargos',      cols:['Nome','Nível'],                  keys:['nome','nivel']},
     kpi:      {title:'Pacotes de KPI',        arr:DB.admin.kpiPacotes,  table:'admin_kpi_pacotes', cols:['Nome','Tipo de célula','KPIs'],  keys:['nome','tipoCelula','_kpis']}
   };
   var cfg = configs[tab];
@@ -2138,6 +2292,11 @@ function _buildAdminFormFields(tab, item){
     '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Analista de Retenção" style="'+s+'"></div>' +
     '<div class="form-row"><label class="form-label">Tipo</label><select id="af-tipo" style="'+s+'">'+['operacional','liderança','qualidade','treinamento','staff'].map(function(t){return '<option value="'+t+'"'+(i.tipo===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>' +
     '</div>');
+  if(tab==='cargos') return (
+    '<div class="form-grid">' +
+    '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Supervisor de Atendimento" style="'+s+'"></div>' +
+    '<div class="form-row"><label class="form-label">Nível</label><select id="af-nivel" style="'+s+'">'+['operacional','liderança','qualidade','treinamento','staff'].map(function(t){return '<option value="'+t+'"'+(i.nivel===t?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>' +
+    '</div>');
   if(tab==='kpi') return (
     '<div class="form-grid">' +
     '<div class="form-row"><label class="form-label">Nome *</label><input type="text" id="af-nome" value="'+(i.nome||'')+'" placeholder="Ex: Atendimento Digital" style="'+s+'"></div>' +
@@ -2192,10 +2351,10 @@ function delAdminItem(table, id, tab){
 }
 
 function _tabToTable(tab){
-  return {ans:'admin_ans',clientes:'admin_clientes',sistemas:'admin_sistemas',tipos:'admin_tipos_celula',perfis:'admin_perfis',kpi:'admin_kpi_pacotes'}[tab]||tab;
+  return {ans:'admin_ans',clientes:'admin_clientes',sistemas:'admin_sistemas',tipos:'admin_tipos_celula',perfis:'admin_perfis',cargos:'admin_cargos',kpi:'admin_kpi_pacotes'}[tab]||tab;
 }
 function _getAdminArr(tab){
-  return {ans:DB.admin.ans,clientes:DB.admin.clientes,sistemas:DB.admin.sistemas,tipos:DB.admin.tiposCelula,perfis:DB.admin.perfis,kpi:DB.admin.kpiPacotes}[tab]||[];
+  return {ans:DB.admin.ans,clientes:DB.admin.clientes,sistemas:DB.admin.sistemas,tipos:DB.admin.tiposCelula,perfis:DB.admin.perfis,cargos:DB.admin.cargos,kpi:DB.admin.kpiPacotes}[tab]||[];
 }
 
 /* KPIs do pacote */
@@ -2246,6 +2405,7 @@ function renderAdminClientes(){ switchAdminTab('clientes',null); }
 function renderAdminSistemas(){ switchAdminTab('sistemas',null); }
 function renderAdminTipos(){ switchAdminTab('tipos',null); }
 function renderAdminPerfis(){ switchAdminTab('perfis',null); }
+function renderAdminCargos(){ switchAdminTab('cargos',null); }
 function renderAdminKpi(){ switchAdminTab('kpi',null); }
 
 /* ===== INIT ===== */
