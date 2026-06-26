@@ -626,17 +626,28 @@ function initWiz(){
   rWizBar();rWizStep();
 }
 
+function _stepToWN(step){
+  // Mapeia step do código (0-6) para índice do WN (0-5, sem step 2 Sistemas)
+  var map={0:0,1:1,2:-1,3:2,4:3,5:4,6:5};
+  return map[step]!=null?map[step]:step;
+}
+function _wnToStep(wnIdx){
+  // Mapeia WN index (0-5) para step do código
+  var map=[0,1,3,4,5,6];
+  return map[wnIdx]!=null?map[wnIdx]:wnIdx;
+}
 function rWizBar(){
+  var curWN=_stepToWN(WIZ.step);
   document.getElementById('wiz-bar').innerHTML=WN.map(function(n,i){
-    var isActive=i===WIZ.step;
-    var isDone=i<WIZ.step;
+    var isActive=i===curWN;
+    var isDone=i<curWN;
     var style=isActive?
       'background:var(--accent);color:#fff;border-bottom:3px solid var(--accent)':
       isDone?
       'background:transparent;color:#1D9E75;border-bottom:3px solid #1D9E75':
       'background:transparent;color:var(--color-text-tertiary);border-bottom:3px solid transparent';
     var icon=isDone?'<i class="ti ti-check" style="font-size:10px;margin-right:3px"></i>':'';
-    return '<div class="wiz-step" onclick="wizGoTo('+i+')" style="'+style+';cursor:pointer">'+icon+n+'</div>';
+    return '<div class="wiz-step" onclick="wizGoTo(_wnToStep('+i+'))" style="'+style+';cursor:pointer">'+icon+n+'</div>';
   }).join('');
 }
 
@@ -846,7 +857,7 @@ function rWizStep(){
       '<div class="nav-btns">'+
         '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
         '<button class="btn sm" onclick="wizSalvarStep()" style="margin-left:auto"><i class="ti ti-device-floppy"></i> Salvar</button>'+
-        '<button class="btn primary" onclick="wizNext()">Revisar <i class="ti ti-arrow-right"></i></button>'+
+        '<button class="btn primary" onclick="wizNext()">Finalizar <i class="ti ti-check"></i></button>'+
       '</div></div>';
     rWizOps();
   }
@@ -1268,7 +1279,7 @@ function wizMostrarSeletorIA(){
           '<div style="font-size:13px;font-weight:600">'+ia.nome+'</div>'+
           '<div style="font-size:11px;color:var(--color-text-secondary)">'+ia.cfg.modelo||'modelo padrão'+'</div>'+
         '</div>'+
-        '<button class="btn sm primary" onclick="wizAnalisarIAComCfg('+i+')"><i class="ti ti-robot"></i> Usar esta IA</button>'+
+        '<button class="btn primary" onclick="wizAnalisarIAComCfg('+i+')"><i class="ti ti-player-play"></i> Executar análise</button>'+
       '</div>';
     }).join('');
     window._iasCfg=ias;
@@ -1281,11 +1292,12 @@ function wizAnalisarIAComCfg(idx){
   var ias=window._iasCfg||[];
   var ia=ias[idx];
   if(!ia)return;
-  // Temporariamente usar esta config
-  var origCfg=DB.admin.aiConfig[0];
+  // Usar esta config diretamente
+  var origCfg=DB.admin.aiConfig&&DB.admin.aiConfig[0];
+  if(!DB.admin.aiConfig) DB.admin.aiConfig=[];
   DB.admin.aiConfig[0]=ia.cfg;
   wizAnalisarIA();
-  DB.admin.aiConfig[0]=origCfg;
+  // Restaurar após chamada async — não restaurar aqui pois fetch é async
 }
 
 function wizAddOp(){WIZ.oportunidades.push({titulo:'',descricao:'',tipo:'automacao',esforco:'baixo',impacto:'alto'});rWizOps();}
@@ -1387,7 +1399,8 @@ function wizSave2Step(){
 }
 function wizNext(){
   wizSave2Step();
-  if(WIZ.step<WN.length-1){
+  var maxStep=6; // 0-6, Revisão é step 6
+  if(WIZ.step<maxStep){
     WIZ.step++;
     rWizStep();
   }
@@ -1396,8 +1409,7 @@ function wizPrev(){
   wizSave2Step();
   if(WIZ.step>0){
     WIZ.step--;
-    if(WIZ.step===2) WIZ.step--; // pular step Sistemas removido
-    if(WIZ.step<0) WIZ.step=0;
+    if(WIZ.step===2) WIZ.step=1; // pular step Sistemas removido
     rWizStep();
   }
 }
