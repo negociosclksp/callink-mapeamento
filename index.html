@@ -834,23 +834,11 @@ function rWizStep(){
     c.innerHTML=
       '<div class="card">'+
       '<div class="card-title"><i class="ti ti-bulb"></i>Oportunidades identificadas</div>'+
-      '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:16px">'+
-        'Registre oportunidades de melhoria ou use a IA para analisar o processo automaticamente.'+
-      '</p>'+
+      '<p style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:16px">Registre as oportunidades de melhoria identificadas no processo.</p>'+
       '<div id="wiz-op-list" style="margin-bottom:12px"></div>'+
       '<div id="wiz-op-form" style="display:none"></div>'+
-      // Seletor de IA
-      '<div id="wiz-ia-seletor" style="display:none;border:2px solid var(--accent);border-radius:10px;padding:16px;margin-bottom:16px;background:var(--color-background-secondary)">'+
-        '<div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:12px"><i class="ti ti-robot"></i> Selecione a IA para analisar o processo</div>'+
-        '<div id="wiz-ia-opcoes"></div>'+
-        '<button class="btn sm" onclick="document.getElementById(\'wiz-ia-seletor\').style.display=\'none\'" style="margin-top:8px"><i class="ti ti-x"></i> Fechar</button>'+
-      '</div>'+
-      // Resultado da IA
-      '<div id="wiz-ia-result"></div>'+
-      // Botões de ação
       '<div style="display:flex;gap:8px;margin-top:8px">'+
-        '<button class="btn sm primary" onclick="wizAddOpInline()"><i class="ti ti-plus"></i> Adicionar manualmente</button>'+
-        '<button class="btn sm" onclick="wizMostrarSeletorIA()" style="border:1px solid var(--accent);color:var(--accent)"><i class="ti ti-robot"></i> Analisar com IA</button>'+
+        '<button class="btn sm primary" onclick="wizAddOpInline()"><i class="ti ti-plus"></i> Adicionar oportunidade</button>'+
       '</div>'+
       '<div class="nav-btns">'+
         '<button class="btn" onclick="wizPrev()"><i class="ti ti-arrow-left"></i> Anterior</button>'+
