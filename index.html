@@ -2815,7 +2815,7 @@ function wizAnalisarIA(){
   var apiUrl='';
   var modelo=aiCfg.modelo||'';
   if(aiCfg.provedor==='gemini'){
-    modelo=modelo||'gemini-1.5-flash';
+    modelo=modelo||'gemini-2.0-flash';
     apiUrl='https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+aiCfg.api_key;
     headers={};
     body={contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:1500}};
