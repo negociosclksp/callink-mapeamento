@@ -2130,11 +2130,24 @@ function editM1Proj(id){
 
 function delM1Proj(id) {
   if (!confirm('Excluir projeto e processos?')) return;
-  sbDelete('m1_projetos', id).then(function() {
+  // Excluir processos vinculados primeiro (evita erro de foreign key)
+  var procsDoProjeto = DB.m1.processos.filter(function(p) { return p.projetoId === id; });
+  var delProcs = procsDoProjeto.map(function(p) {
+    return sbDelete('m1_processos', p.id).catch(function(e) {
+      console.warn('Erro ao excluir processo '+p.id+':', e.message);
+    });
+  });
+  Promise.all(delProcs).then(function() {
+    return sbDelete('m1_projetos', id);
+  }).then(function() {
     DB.m1.projetos = DB.m1.projetos.filter(function(p) { return p.id !== id; });
     DB.m1.processos = DB.m1.processos.filter(function(p) { return p.projetoId !== id; });
     renderM1Proj(); rSels();
-  }).catch(function(e) { alert('Erro: ' + e.message); });
+    _showToast('Projeto excluído.',true);
+  }).catch(function(e) {
+    console.error('Erro ao excluir projeto:', e);
+    alert('Erro ao excluir: ' + e.message + '\n\nVerifique se o Supabase está online em status.supabase.com');
+  });
 }
 
 /* M1 — Processos (via wizard) */
